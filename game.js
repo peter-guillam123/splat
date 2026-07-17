@@ -1,8 +1,8 @@
 // Parachute — a little dude falls forever; hold to open the chute.
 // World is a fixed-width, infinitely tall column. Camera follows the dude down.
 
-const W = 720;
-const H = 1280;
+const W = 900;
+const H = 1600;
 
 const CFG = {
   gravity: 2200,
