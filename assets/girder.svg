@@ -1,0 +1,43 @@
+<svg viewBox="0 0 128 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Steel girder segment, tiles horizontally (clean left/right edges). Light from top. -->
+  <!-- web (middle) -->
+  <rect x="0" y="8" width="128" height="24" fill="#4a7d8c"/>
+  <!-- cross-brace X pattern in the web, aligned to tile at 64px -->
+  <g stroke="#3d6b79" stroke-width="4" stroke-linecap="round">
+    <path d="M6 12 L58 28"/>
+    <path d="M58 12 L6 28"/>
+    <path d="M70 12 L122 28"/>
+    <path d="M122 12 L70 28"/>
+  </g>
+  <!-- AO under top flange -->
+  <rect x="0" y="8" width="128" height="4.5" fill="#000" opacity="0.20"/>
+  <!-- top flange: lit -->
+  <rect x="0" y="0" width="128" height="9" fill="#66a0ad"/>
+  <rect x="0" y="0" width="128" height="3" fill="#8cc3cd"/>
+  <!-- bottom flange: in shade -->
+  <rect x="0" y="31" width="128" height="9" fill="#35606d"/>
+  <rect x="0" y="31" width="128" height="2.5" fill="#000" opacity="0.15"/>
+  <!-- rivets on both flanges, offset from tile edges; specs catch top-left light -->
+  <g>
+    <circle cx="16" cy="4.5" r="2.4" fill="#2f5561"/>
+    <circle cx="15.3" cy="3.8" r="0.9" fill="#a9d4dc"/>
+    <circle cx="48" cy="4.5" r="2.4" fill="#2f5561"/>
+    <circle cx="47.3" cy="3.8" r="0.9" fill="#a9d4dc"/>
+    <circle cx="80" cy="4.5" r="2.4" fill="#2f5561"/>
+    <circle cx="79.3" cy="3.8" r="0.9" fill="#a9d4dc"/>
+    <circle cx="112" cy="4.5" r="2.4" fill="#2f5561"/>
+    <circle cx="111.3" cy="3.8" r="0.9" fill="#a9d4dc"/>
+    <circle cx="16" cy="35.5" r="2.4" fill="#27454f"/>
+    <circle cx="15.3" cy="34.8" r="0.8" fill="#6f98a3"/>
+    <circle cx="48" cy="35.5" r="2.4" fill="#27454f"/>
+    <circle cx="47.3" cy="34.8" r="0.8" fill="#6f98a3"/>
+    <circle cx="80" cy="35.5" r="2.4" fill="#27454f"/>
+    <circle cx="79.3" cy="34.8" r="0.8" fill="#6f98a3"/>
+    <circle cx="112" cy="35.5" r="2.4" fill="#27454f"/>
+    <circle cx="111.3" cy="34.8" r="0.8" fill="#6f98a3"/>
+  </g>
+  <!-- worn paint scuffs: sparse grit, varied -->
+  <rect x="30" y="1" width="7" height="1.6" rx="0.8" fill="#a9d4dc" opacity="0.6"/>
+  <rect x="92" y="5.5" width="5" height="1.4" rx="0.7" fill="#2f5561" opacity="0.6"/>
+  <rect x="58" y="33" width="6" height="1.4" rx="0.7" fill="#27454f" opacity="0.7"/>
+</svg>

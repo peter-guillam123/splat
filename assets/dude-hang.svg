@@ -1,0 +1,58 @@
+<svg viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hanging pose: arms up gripping risers, legs dangling. Light from top-left. -->
+  <!-- arms: both up, near arm slightly wider -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M60 68 Q72 46 75 18" stroke="#d15a1e" stroke-width="10"/>
+    <path d="M59 66 Q71 46 74 19" stroke="#f2762e" stroke-width="9"/>
+    <path d="M36 68 Q23 46 21 16" stroke="#d15a1e" stroke-width="10"/>
+    <path d="M37 66 Q25 46 22 17" stroke="#f2762e" stroke-width="9"/>
+    <path d="M33 58 Q26 46 24 30" stroke="#ff9a52" stroke-width="3" opacity="0.8"/>
+  </g>
+  <!-- gripping fists, clear of the head silhouette -->
+  <circle cx="21" cy="13" r="7" fill="#6b4a32"/>
+  <circle cx="19" cy="11" r="2.2" fill="#8a6547" opacity="0.9"/>
+  <circle cx="75" cy="15" r="7" fill="#5c3f2b"/>
+  <!-- legs: dangling, knees soft, one trailing = broken symmetry -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M54 96 Q58 106 56 118" stroke="#d15a1e" stroke-width="11"/>
+    <path d="M54 95 Q57 105 55.5 117" stroke="#f2762e" stroke-width="10"/>
+    <path d="M42 96 Q38 108 41 120" stroke="#d15a1e" stroke-width="11"/>
+    <path d="M42 95 Q39 107 41.5 119" stroke="#f2762e" stroke-width="10"/>
+    <path d="M40 99 Q38 106 39 112" stroke="#ff9a52" stroke-width="3" opacity="0.7"/>
+  </g>
+  <!-- boots -->
+  <ellipse cx="41" cy="122" rx="7.5" ry="6" fill="#6b4a32"/>
+  <ellipse cx="38.8" cy="120.2" rx="2.3" ry="1.8" fill="#8a6547" opacity="0.9"/>
+  <ellipse cx="56" cy="120" rx="7.5" ry="6" fill="#5c3f2b"/>
+  <!-- torso -->
+  <path d="M35 68 Q32 64 36 62 L60 62 Q64 64 61 68 L62 92 Q62 100 48 100 Q34 100 34 92 Z" fill="#f2762e"/>
+  <path d="M54 62 L60 62 Q64 64 61 68 L62 92 Q62 99 51 100 Q58 96 57 89 Z" fill="#d15a1e"/>
+  <path d="M37 65 Q36 76 36.5 88" stroke="#ff9a52" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <!-- harness straps over both shoulders + buckle -->
+  <path d="M38 62 L36 90" stroke="#6b4a32" stroke-width="4.5"/>
+  <path d="M58 62 L60 90" stroke="#6b4a32" stroke-width="4.5"/>
+  <path d="M35 74 L62 73" stroke="#6b4a32" stroke-width="5"/>
+  <rect x="43.5" y="70" width="9" height="7.5" rx="1.5" fill="#f4d03f"/>
+  <rect x="44.7" y="71.2" width="3.2" height="2" rx="1" fill="#fff3c2"/>
+  <!-- AO under head -->
+  <ellipse cx="48" cy="64" rx="14" ry="4" fill="#000" opacity="0.15"/>
+  <!-- head -->
+  <circle cx="48" cy="44" r="22" fill="#e8a06c"/>
+  <path d="M60 26 A22 22 0 0 1 60 62 Q68 54 68 44 Q68 34 60 26" fill="#d18754"/>
+  <path d="M30 54 A22 22 0 0 0 66 54 Q58 64 48 64 Q38 64 30 54" fill="#d18754" opacity="0.55"/>
+  <path d="M32 34 Q36 26 44 24" stroke="#f7b98a" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.9"/>
+  <!-- goggles pushed up on forehead now: relaxed -->
+  <path d="M27 30 L69 28" stroke="#6b4a32" stroke-width="6"/>
+  <circle cx="40" cy="29" r="8" fill="#f4d03f"/>
+  <circle cx="57" cy="28" r="8" fill="#e0b52f"/>
+  <circle cx="40" cy="29" r="5.8" fill="#3a3d4d"/>
+  <circle cx="57" cy="28" r="5.8" fill="#3a3d4d"/>
+  <circle cx="38" cy="27" r="1.8" fill="#ffffff" opacity="0.8"/>
+  <!-- eyes: happy closed arcs (relief!) -->
+  <path d="M35 43 Q39 39.5 43 43" stroke="#5c3f2b" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <path d="M53 42.5 Q57 39 61 42.5" stroke="#5c3f2b" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <!-- nose + easy smile -->
+  <ellipse cx="49" cy="48" rx="3" ry="2.4" fill="#d18754"/>
+  <path d="M42 53 Q49 58.5 56 52.5" stroke="#7a3b2e" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <ellipse cx="32" cy="48" rx="3.5" ry="2.5" fill="#e8806c" opacity="0.55"/>
+</svg>

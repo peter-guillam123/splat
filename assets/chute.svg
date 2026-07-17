@@ -1,0 +1,37 @@
+<svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Parachute canopy, coral + cream gores, scalloped hem. Anchor: bottom-centre.
+       Suspension lines are drawn in code so they stretch during the snap. Light top-left. -->
+  <defs>
+    <clipPath id="dome">
+      <path d="M12 102 C12 42 58 10 120 10 C182 10 228 42 228 102
+               Q211 92 194 102 Q177 92 160 102 Q140 90 120 102
+               Q100 90 80 102 Q63 92 46 102 Q29 92 12 102 Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#dome)">
+    <!-- base coral, cream gores fanning from the apex -->
+    <rect x="0" y="0" width="240" height="120" fill="#e8543f"/>
+    <path d="M120 10 L46 112 L80 112 Z" fill="#f5e6c8"/>
+    <path d="M120 10 L120 112 L160 112 Z" fill="#f5e6c8"/>
+    <path d="M120 10 L194 112 L228 112 Z" fill="#f5e6c8"/>
+    <!-- shadow: right side of dome in shade -->
+    <path d="M120 10 C182 10 228 42 228 102 L160 102 Z" fill="#000" opacity="0.10"/>
+    <path d="M194 30 C216 48 228 70 228 102 L194 102 Z" fill="#000" opacity="0.12"/>
+    <!-- underside rim shadow at the hem -->
+    <path d="M12 102 Q120 74 228 102 L228 120 L12 120 Z" fill="#000" opacity="0.16"/>
+    <!-- lit sheen upper-left -->
+    <path d="M36 44 C52 22 84 12 116 12 C88 18 60 30 44 54 Z" fill="#fff" opacity="0.30"/>
+    <path d="M30 62 Q34 48 44 38" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.22"/>
+  </g>
+  <!-- gore seams: soft, not black -->
+  <g stroke="#c23e2e" stroke-width="1.6" fill="none" opacity="0.55">
+    <path d="M120 10 L46 102"/>
+    <path d="M120 10 L80 102"/>
+    <path d="M120 10 L120 102"/>
+    <path d="M120 10 L160 102"/>
+    <path d="M120 10 L194 102"/>
+  </g>
+  <!-- apex vent -->
+  <ellipse cx="120" cy="11" rx="7" ry="3.4" fill="#a83325"/>
+  <ellipse cx="118.5" cy="10.4" rx="2.4" ry="1.1" fill="#e8836f" opacity="0.8"/>
+</svg>

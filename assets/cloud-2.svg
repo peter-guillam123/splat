@@ -1,0 +1,7 @@
+<svg viewBox="0 0 120 56" xmlns="http://www.w3.org/2000/svg">
+  <!-- Medium puffy cloud, asymmetric lumps. -->
+  <path d="M16 44 Q4 44 6 34 Q8 26 18 26 Q18 14 32 12 Q44 10 50 18 Q56 6 72 8 Q86 10 88 22 Q102 20 108 30 Q114 38 108 44 Q104 48 94 48 L24 48 Q18 48 16 44 Z"
+        fill="#ffffff"/>
+  <path d="M16 44 Q8 44 7 38 Q30 42 60 41 Q88 40 108 41 Q107 46 94 48 L24 48 Q18 48 16 44 Z"
+        fill="#cfdfe9"/>
+</svg>

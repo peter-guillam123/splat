@@ -1,0 +1,23 @@
+<svg viewBox="0 0 90 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Long hair streaming upward. Anchor point: bottom-centre (45, 96) sits at the scalp.
+       Code squashes/sways this; drawn at full streaming extension. Light top-left. -->
+  <!-- back layer: darkest, widest mass -->
+  <path d="M45 96
+           Q20 84 16 62 Q13 44 22 28 Q24 40 30 46 Q26 30 33 12
+           Q36 28 41 34 Q40 18 47 4 Q50 20 54 30 Q57 16 64 8
+           Q63 26 68 38 Q72 28 78 24 Q74 46 68 60 Q64 78 45 96 Z"
+        fill="#6d3323"/>
+  <!-- mid layer: base tone, offset left/up so dark shows on right (shadow side) -->
+  <path d="M45 96
+           Q24 82 21 62 Q19 46 26 32 Q28 44 34 50 Q31 34 37 18
+           Q40 32 44 38 Q44 24 49 12 Q52 26 55 34 Q58 24 63 18
+           Q62 34 64 46 Q62 66 58 76 Q54 88 45 96 Z"
+        fill="#8c4530"/>
+  <!-- front strands: lit tone on the left side -->
+  <path d="M45 96 Q30 80 28 62 Q27 50 31 40 Q33 52 38 58 Q36 44 40 30 Q43 44 46 52 Q48 70 45 96 Z"
+        fill="#b3603f"/>
+  <!-- flicked highlight strands -->
+  <path d="M33 58 Q31 46 34 36" stroke="#cd7a52" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
+  <path d="M42 48 Q42 36 45 26" stroke="#cd7a52" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M52 60 Q54 48 57 40" stroke="#a05038" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+</svg>

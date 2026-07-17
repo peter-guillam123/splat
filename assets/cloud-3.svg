@@ -1,0 +1,7 @@
+<svg viewBox="0 0 80 36" xmlns="http://www.w3.org/2000/svg">
+  <!-- Small wispy cloud for the far layer. -->
+  <path d="M12 28 Q4 28 5 21 Q6 16 13 16 Q14 8 24 7 Q32 6 36 11 Q41 3 52 5 Q61 7 62 15 Q70 14 73 20 Q76 26 70 29 Q67 31 60 31 L18 31 Q14 31 12 28 Z"
+        fill="#ffffff"/>
+  <path d="M12 28 Q7 28 6 24 Q26 27 48 26 Q62 26 72 26 Q71 30 60 31 L18 31 Q14 31 12 28 Z"
+        fill="#dbe8f0"/>
+</svg>
