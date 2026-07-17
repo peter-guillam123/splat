@@ -26,6 +26,22 @@
 </head>
 <body>
   <div id="game"></div>
+  <a id="about-link" href="about.html">about</a>
+  <style>
+    #about-link {
+      position: fixed;
+      right: 14px;
+      bottom: 10px;
+      z-index: 10;
+      color: rgba(255, 255, 255, 0.65);
+      font-family: -apple-system, system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 8px 10px; /* comfortable tap target */
+    }
+    #about-link:hover, #about-link:focus { color: #fff; }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
   <script src="audio.js"></script>
   <script src="game.js"></script>
