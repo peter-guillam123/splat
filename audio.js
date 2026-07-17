@@ -8,7 +8,7 @@
       this.master = null;
       this.windGain = null;
       this.windFilter = null;
-      this.muted = localStorage.getItem('parachute.muted') === '1';
+      this.muted = localStorage.getItem('splat.muted') === '1';
     }
 
     ensure() {
@@ -44,7 +44,7 @@
 
     setMuted(m) {
       this.muted = m;
-      localStorage.setItem('parachute.muted', m ? '1' : '0');
+      localStorage.setItem('splat.muted', m ? '1' : '0');
       if (this.master) this.master.gain.value = m ? 0 : 1;
     }
 

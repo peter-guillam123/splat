@@ -1,4 +1,4 @@
-// Parachute — a little dude falls forever; hold to open the chute.
+// Splat! — a little dude falls forever; hold to open the chute.
 // World is a fixed-width, infinitely tall column. Camera follows the dude down.
 
 const W = 900;
@@ -68,7 +68,7 @@ class PlayScene extends Phaser.Scene {
     this.clouds = [];
     this.nextRowY = this.startY + H * 1.35;
     this.prevGapC = W / 2;
-    this.best = parseInt(localStorage.getItem('parachute.best') || '0', 10);
+    this.best = parseInt(localStorage.getItem('splat.best') || '0', 10);
 
     this.cameras.main.setBounds(0, -2000, W, 4e9);
 
@@ -183,9 +183,9 @@ class PlayScene extends Phaser.Scene {
 
     // ---- title overlay ----
     this.titleGroup = this.add.container(0, 0).setScrollFactor(0).setDepth(110);
-    const title = this.add.text(W / 2, H * 0.16, 'PARACHUTE', {
-      fontFamily: FONT, fontSize: '86px', fontStyle: '800', color: '#ffffff',
-    }).setOrigin(0.5).setShadow(0, 4, 'rgba(0,0,0,0.28)', 10).setLetterSpacing(10);
+    const title = this.add.text(W / 2, H * 0.16, 'SPLAT!', {
+      fontFamily: FONT, fontSize: '128px', fontStyle: '800', color: '#ffffff',
+    }).setOrigin(0.5).setShadow(0, 5, 'rgba(0,0,0,0.28)', 12).setLetterSpacing(6);
     const sub1 = this.add.text(W / 2, H * 0.16 + 72, 'hold to open your chute', {
       fontFamily: FONT, fontSize: '30px', fontStyle: '600', color: '#ffffff',
     }).setOrigin(0.5).setAlpha(0.95).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
@@ -448,7 +448,7 @@ class PlayScene extends Phaser.Scene {
     const isBest = metres > this.best;
     if (isBest) {
       this.best = metres;
-      localStorage.setItem('parachute.best', String(metres));
+      localStorage.setItem('splat.best', String(metres));
     }
 
     SFX.crash();
