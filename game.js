@@ -7,9 +7,12 @@ const H = 1600;
 const CFG = {
   gravity: 2200,
   terminalVy: 900,       // freefall cap
-  chuteVy: 170,          // descent speed the open chute eases you toward
-  snapImpulse: 480,      // instant upward kick on deploy
-  snapLiftCap: -300,     // fastest upward speed the kick can give you
+  chuteVy: 175,          // gentle descent the chute floats you at
+  snapImpulse: 1400,     // big enough that the lift cap always binds
+  snapLiftCap: -360,     // guaranteed upward speed the moment it opens
+  liftVel: -190,         // held upward speed during the lift window
+  liftDuration: 420,     // ms of lift before it settles into the float
+  chuteEase: 6,          // how fast vy is pulled to its target while open
   steerAccelOpen: 1300,
   steerAccelFree: 560,
   maxVxOpen: 340,
@@ -376,7 +379,10 @@ class PlayScene extends Phaser.Scene {
     this.chuteOpen = true;
     this.dude.setTexture('dude-hang');
     this.dude.setMaxVelocity(CFG.maxVxOpen, CFG.terminalVy);
+    // drive vy by hand while open so the lift is predictable; gravity off
+    this.dude.body.allowGravity = false;
     this.dude.setVelocityY(Math.max(this.dude.body.velocity.y - CFG.snapImpulse, CFG.snapLiftCap));
+    this.liftUntil = this.time.now + CFG.liftDuration;
 
     this.chute.setVisible(true);
     this.chute.setScale(0.06, 0.03);
@@ -397,6 +403,7 @@ class PlayScene extends Phaser.Scene {
   closeChute(ranDry) {
     this.chuteOpen = false;
     this.dude.setTexture('dude-fall');
+    this.dude.body.allowGravity = true; // hand vertical control back to gravity
     this.dude.setMaxVelocity(CFG.maxVxFree, CFG.terminalVy);
     this.tweens.add({
       targets: this.chute, scaleX: 0.05, scaleY: 0.03, duration: 110, ease: 'Cubic.in',
@@ -550,9 +557,13 @@ class PlayScene extends Phaser.Scene {
       if (this.chuteOpen) {
         this.juice = Math.max(0, this.juice - CFG.juiceDrain * dt);
         if (this.juice <= 0) { this.mustRelease = true; this.closeChute(true); }
-        else if (vy > CFG.chuteVy) {
-          // ease toward the chute's slow descent speed
-          body.setVelocityY(vy + (CFG.chuteVy - vy) * (1 - Math.exp(-5 * dt)));
+        else {
+          // lift upward for a beat, then settle into the gentle float.
+          // Read velocity fresh: deploy() may have set the snap kick this
+          // very frame, and the top-of-update `vy` is stale by then.
+          const cur = body.velocity.y;
+          const target = time < this.liftUntil ? CFG.liftVel : CFG.chuteVy;
+          body.setVelocityY(cur + (target - cur) * (1 - Math.exp(-CFG.chuteEase * dt)));
         }
       } else {
         this.juice = Math.min(CFG.juiceMax, this.juice + CFG.juiceRefill * dt);
