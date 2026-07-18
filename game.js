@@ -32,6 +32,13 @@ const CFG = {
   scrollSpeed: [70, 120],// px/s for a fully scrolling gap
   depthWobble: 6000,     // wobbling gaps start easing in here (~60 m)
   depthScroll: 16000,    // fully scrolling gaps start easing in here (~160 m)
+  depthBirds: 9000,      // birds start crossing here (~90 m)
+  birdGapMs: [1300, 2900], // delay between birds
+  birdBigChance: 0.3,    // rest are small
+  birdSpeedSmall: [95, 165], // fast
+  birdSpeedBig: [40, 72],    // slow
+  birdNudge: 340,        // fixed sideways shove from a small bird (px/s)
+  birdFluster: 380,      // ms your steering is dampened after a nudge
   metresPerPx: 1 / 100,
 };
 
@@ -60,6 +67,10 @@ class PlayScene extends Phaser.Scene {
     this.load.svg('cloud-1', 'assets/cloud-1.svg', { width: 360, height: 160 });
     this.load.svg('cloud-2', 'assets/cloud-2.svg', { width: 240, height: 112 });
     this.load.svg('cloud-3', 'assets/cloud-3.svg', { width: 160, height: 72 });
+    this.load.svg('bird-big-up', 'assets/bird-big-up.svg', { width: 256, height: 192 });
+    this.load.svg('bird-big-down', 'assets/bird-big-down.svg', { width: 256, height: 192 });
+    this.load.svg('bird-small-up', 'assets/bird-small-up.svg', { width: 160, height: 120 });
+    this.load.svg('bird-small-down', 'assets/bird-small-down.svg', { width: 160, height: 120 });
   }
 
   create() {
@@ -97,6 +108,16 @@ class PlayScene extends Phaser.Scene {
       this.die(splat);
     });
 
+    // ---- birds ----
+    this.anims.create({ key: 'flap-big', frameRate: 5, repeat: -1,
+      frames: [{ key: 'bird-big-up' }, { key: 'bird-big-down' }] });
+    this.anims.create({ key: 'flap-small', frameRate: 13, repeat: -1,
+      frames: [{ key: 'bird-small-up' }, { key: 'bird-small-down' }] });
+    this.birdsGroup = this.physics.add.group({ allowGravity: false });
+    this.nextBirdAt = 0;
+    this.flusterUntil = 0;
+    this.physics.add.overlap(this.dude, this.birdsGroup, (dude, bird) => this.hitBird(bird));
+
     for (let i = 0; i < 5; i++) this.spawnCloud(true);
 
     this.cameras.main.startFollow(this.dude, false, 1, 0.15);
@@ -133,6 +154,16 @@ class PlayScene extends Phaser.Scene {
       g.fillStyle(0xe0243a, 1); g.fillCircle(8, 8, 5);
       g.fillStyle(0xff5a70, 0.6); g.fillCircle(6, 6, 2);
       g.generateTexture('drop', 16, 16);
+      g.destroy();
+    }
+    if (!this.textures.exists('feather')) {
+      // a little curved feather (tinted per bird when it bursts)
+      const g = this.make.graphics({ add: false });
+      g.fillStyle(0xffffff, 1);
+      g.fillEllipse(9, 9, 15, 7);
+      g.fillStyle(0x000000, 0.12); g.fillEllipse(9, 11, 13, 3); // soft underside
+      g.fillStyle(0xffffff, 1); g.fillRect(8.2, 3, 1.6, 12);    // quill
+      g.generateTexture('feather', 18, 18);
       g.destroy();
     }
     if (!this.textures.exists('glow')) {
@@ -419,6 +450,75 @@ class PlayScene extends Phaser.Scene {
     while (this.clouds.length < 6) this.spawnCloud(false);
   }
 
+  // ---------- birds ----------
+
+  spawnBird() {
+    const big = Math.random() < CFG.birdBigChance;
+    const fromLeft = Math.random() < 0.5;
+    const dir = fromLeft ? 1 : -1;
+    const y = this.dude.y + Phaser.Math.Between(240, 680); // ahead in the fall
+    const x = fromLeft ? -70 : W + 70;
+    const b = this.birdsGroup.create(x, y, big ? 'bird-big-up' : 'bird-small-up')
+      .setScale(0.5).setDepth(6);
+    b.big = big;
+    b.setFlipX(dir > 0); // art faces left; flip it to fly right
+    const rng = big ? CFG.birdSpeedBig : CFG.birdSpeedSmall;
+    b.body.setVelocityX(Phaser.Math.Between(rng[0], rng[1]) * dir);
+    // forgiving central hitbox (texture space; scales with the sprite)
+    if (big) b.body.setSize(150, 66).setOffset(56, 74);
+    else b.body.setSize(94, 52).setOffset(36, 40);
+    b.play(big ? 'flap-big' : 'flap-small');
+    b.tint0 = 0xffffff;
+  }
+
+  updateBirds(time) {
+    const depth = this.dude.y - this.startY;
+    if (depth > CFG.depthBirds && time > this.nextBirdAt) {
+      this.spawnBird();
+      this.nextBirdAt = time + Phaser.Math.Between(CFG.birdGapMs[0], CFG.birdGapMs[1]);
+    }
+    const cam = this.cameras.main;
+    this.birdsGroup.getChildren().slice().forEach((b) => {
+      if (b.x < -110 || b.x > W + 110 || b.y < cam.scrollY - 140) {
+        this.birdsGroup.remove(b, true, true);
+      }
+    });
+  }
+
+  hitBird(bird) {
+    if (this.state !== 'playing' || bird.hit) return;
+    bird.hit = true;
+    if (bird.big) {
+      // a wall with wings: knocked out of the sky, tumble (never a splat)
+      this.featherBurst(bird.x, bird.y, true);
+      SFX.squawk(false);
+      this.die(false);
+    } else {
+      // clattered by a small one: a bounded shove its way + a moment of fluster
+      const dir = Math.sign(bird.body.velocity.x) || 1;
+      this.dude.body.setVelocityX(dir * CFG.birdNudge);
+      this.flusterUntil = this.time.now + CFG.birdFluster;
+      this.featherBurst(bird.x, bird.y, false);
+      SFX.squawk(true);
+      if (!this.reducedMotion) this.cameras.main.shake(90, 0.004);
+      this.birdsGroup.remove(bird, true, true);
+    }
+  }
+
+  featherBurst(x, y, big) {
+    if (this.reducedMotion) return;
+    const tint = big ? 0x8aa8ba : 0xd68a5a;
+    const f = this.add.particles(x, y, 'feather', {
+      speed: { min: 40, max: big ? 220 : 170 }, angle: { min: 0, max: 360 },
+      gravityY: 260, lifespan: { min: 700, max: 1300 },
+      scale: { start: big ? 0.9 : 0.7, end: 0.5 },
+      rotate: { min: 0, max: 360 },
+      alpha: { start: 1, end: 0 }, tint, emitting: false,
+    }).setDepth(11);
+    f.explode(big ? 16 : 10);
+    this.time.delayedCall(1400, () => f.destroy());
+  }
+
   // ---------- sky ----------
 
   updateSky(depth) {
@@ -449,6 +549,7 @@ class PlayScene extends Phaser.Scene {
       Math.round(Phaser.Math.Linear(255, 205, night)));
     for (const row of this.rows) { row.l.setTint(dim); row.r.setTint(dim); }
     for (const c of this.clouds) c.setTint(dim);
+    for (const b of this.birdsGroup.getChildren()) b.setTint(dim);
   }
 
   // ---------- chute ----------
@@ -675,8 +776,10 @@ class PlayScene extends Phaser.Scene {
         const dx = this.input.activePointer.worldX - this.dude.x;
         ax = Phaser.Math.Clamp(dx * 9, -accel, accel);
       }
+      if (time < this.flusterUntil) ax *= 0.25; // dazed after a bird clatters you
       body.setAccelerationX(ax);
-      if (!ax) body.setVelocityX(body.velocity.x * Math.exp(-3 * dt)); // gentle air drag
+      // gentle air drag when not steering; suspended briefly so a bird shove carries
+      if (!ax && time >= this.flusterUntil) body.setVelocityX(body.velocity.x * Math.exp(-3 * dt));
 
       // keep him on screen
       if (this.dude.x < 40) { this.dude.x = 40; if (body.velocity.x < 0) body.setVelocityX(0); }
@@ -709,6 +812,7 @@ class PlayScene extends Phaser.Scene {
       this.dude.rotation = (body.velocity.x / CFG.maxVxOpen) * 0.14;
 
       this.updateRows(dt);
+      this.updateBirds(time);
       this.depthText.setText(`${Math.max(0, Math.floor((this.dude.y - this.startY) * CFG.metresPerPx))} m`);
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
     }

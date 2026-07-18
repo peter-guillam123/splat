@@ -122,6 +122,30 @@
       this._noiseBurst(0.12, 0.08, 'lowpass', 700);
     }
 
+    squawk(high) { // comic bird squawk; high = the small fast bird
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const base = high ? 680 : 360;
+      const o = this.ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(base * 0.8, t);
+      o.frequency.linearRampToValueAtTime(base * 1.4, t + 0.05);
+      o.frequency.linearRampToValueAtTime(base * 0.6, t + 0.17);
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.value = high ? 40 : 26;
+      const lfoG = this.ctx.createGain(); lfoG.gain.value = base * 0.14;
+      lfo.connect(lfoG).connect(o.frequency);
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = base * 1.5; bp.Q.value = 3;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(high ? 0.12 : 0.16, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.21);
+      o.connect(bp).connect(g).connect(this.master);
+      o.start(t); o.stop(t + 0.23);
+      lfo.start(t); lfo.stop(t + 0.23);
+    }
+
     chime() {  // near-miss reward
       if (!this.ctx) return;
       this._tone('sine', 880, 880, 0.12, 0.10);
