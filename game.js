@@ -1167,7 +1167,13 @@ class PlayScene extends Phaser.Scene {
 }
 
 function boot() {
-  if (window.game) return;
+  // if a healthy game is already up, leave it; if a broken one exists
+  // (object but no canvas), tear it down and rebuild
+  if (window.game) {
+    if (document.querySelector('#game canvas')) return;
+    try { window.game.destroy(true); } catch (e) { /* ignore */ }
+    window.game = null;
+  }
   window.game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
@@ -1186,15 +1192,11 @@ function boot() {
   });
 }
 
-// Start once Space Grotesk is ready so every label uses it from the first
-// frame; fall back after a short wait (or if the Font API is missing).
-if (document.fonts && document.fonts.load) {
-  Promise.all([
-    document.fonts.load('700 1em "Space Grotesk"'),
-    document.fonts.load('500 1em "Space Grotesk"'),
-    document.fonts.load('400 1em "Space Grotesk"'),
-  ]).then(boot).catch(boot);
-  setTimeout(boot, 2000);
+// Prefer starting once the font has settled so labels use it from frame one,
+// but NEVER let font loading hold the game back — race it against a short
+// timeout, and fall back if the Font API is missing.
+if (document.fonts && document.fonts.ready) {
+  Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 700))]).then(boot);
 } else {
   boot();
 }
