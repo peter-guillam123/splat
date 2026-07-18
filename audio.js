@@ -146,6 +146,19 @@
       lfo.start(t); lfo.stop(t + 0.23);
     }
 
+    chaching(big) { // cash pickup: a bright two-note register ding
+      if (!this.ctx) return;
+      const f = big ? 1046 : 880;
+      this._tone('sine', f, f, 0.09, 0.11);
+      this._tone('sine', f * 1.5, f * 1.5, 0.16, 0.09, 0.06);
+    }
+
+    payday() { // caught him: a little triumphant arpeggio + sparkle
+      if (!this.ctx) return;
+      [523, 659, 784, 1046].forEach((n, i) => this._tone('triangle', n, n, 0.2, 0.11, i * 0.06));
+      this._noiseBurst(0.28, 0.05, 'highpass', 3000);
+    }
+
     chime() {  // near-miss reward
       if (!this.ctx) return;
       this._tone('sine', 880, 880, 0.12, 0.10);

@@ -40,6 +40,19 @@ const CFG = {
   birdNudge: 340,        // fixed sideways shove from a small bird (px/s)
   birdFluster: 380,      // ms your steering is dampened after a nudge
   metresPerPx: 1 / 100,
+  // --- the robber chase ---
+  robberVy: 560,         // his steady fall; freefall (900) closes, chute loses
+  robberEscalate: 45,    // +vy each time you catch him
+  titleGap: 1520,        // how far below he starts, and the handoff lead-in
+  catchDist: 62,         // gap (px) at which you reach him
+  escapeGap: 1680,       // fresh lead he bolts to after a catch
+  maxGap: 3400,          // he eases off past this so the chase stays winnable
+  cashDropMs: [480, 1050], // how often he sheds a note
+  cashBagChance: 0.12,   // rest are notes
+  cashNote: 60,          // $ per note
+  cashBag: 350,          // $ per bag
+  catchPayday: 1000,     // $ for catching him (grows with the chase level)
+  depthTrickle: 0.02,    // $ per px fallen (you're on the case)
 };
 
 // Sky bands the fall cycles through: day → sunset → night → dawn → day…
@@ -71,6 +84,9 @@ class PlayScene extends Phaser.Scene {
     this.load.svg('bird-big-down', 'assets/bird-big-down.svg', { width: 256, height: 192 });
     this.load.svg('bird-small-up', 'assets/bird-small-up.svg', { width: 160, height: 120 });
     this.load.svg('bird-small-down', 'assets/bird-small-down.svg', { width: 160, height: 120 });
+    this.load.svg('robber-fall', 'assets/robber-fall.svg', { width: 192, height: 256 });
+    this.load.svg('cash-note', 'assets/cash-note.svg', { width: 96, height: 56 });
+    this.load.svg('cash-bag', 'assets/cash-bag.svg', { width: 88, height: 96 });
   }
 
   create() {
@@ -86,6 +102,11 @@ class PlayScene extends Phaser.Scene {
     this.nextRowY = this.startY + H * 1.35;
     this.prevGapC = W / 2;
     this.best = parseInt(localStorage.getItem('splat.best') || '0', 10);
+    this.bestCash = parseInt(localStorage.getItem('splat.bestcash') || '0', 10);
+    this.cash = 0;         // headline score, in dollars
+    this.chaseLevel = 0;   // rises each catch; the robber gets faster
+    this.nextCashAt = 0;
+    this.prevDudeY = this.startY; // for the depth-trickle score
 
     this.cameras.main.setBounds(0, -2000, W, 4e9);
 
@@ -118,10 +139,28 @@ class PlayScene extends Phaser.Scene {
     this.flusterUntil = 0;
     this.physics.add.overlap(this.dude, this.birdsGroup, (dude, bird) => this.hitBird(bird));
 
+    this.buildRobber();
+
     for (let i = 0; i < 5; i++) this.spawnCloud(true);
 
-    this.cameras.main.startFollow(this.dude, false, 1, 0.15);
+    // The title watches the robber; the dude is a screen above, off-frame.
+    // The first tap hands the camera to the dude (see startRun).
+    this.cameras.main.startFollow(this.robber, false, 1, 0.12);
     this.cameras.main.setFollowOffset(0, -H * 0.17);
+  }
+
+  buildRobber() {
+    this.cashGroup = this.physics.add.group({ allowGravity: false });
+    this.physics.add.overlap(this.dude, this.cashGroup, (dude, c) => this.grabCash(c));
+
+    this.robber = this.physics.add.sprite(W / 2, this.startY + CFG.titleGap, 'robber-fall')
+      .setScale(0.5).setDepth(10);
+    this.robber.body.allowGravity = false;
+    this.robber.body.setVelocityY(CFG.robberVy);
+    this.caught = false; // brief guard after a catch
+
+    // downward chevron shown when he's below the view
+    this.chevron = this.add.graphics().setScrollFactor(0).setDepth(95);
   }
 
   // ---------- construction ----------
@@ -209,8 +248,9 @@ class PlayScene extends Phaser.Scene {
     this.dude = this.physics.add.sprite(W / 2, this.startY, 'dude-fall')
       .setScale(0.5).setDepth(10);
     this.poseBody(false); // flat-skydiver hitbox to start
-    // gravity is on from the title screen: he plummets through the day sky
-    // behind the title, and the first tap simply starts spawning obstacles.
+    // On the title he's pinned a screen above the robber (off-frame, gravity
+    // off); the first tap drops him into real physics to give chase.
+    this.dude.body.allowGravity = false;
     this.dude.setMaxVelocity(CFG.maxVxFree, CFG.terminalVy);
 
     this.chute = this.add.image(W / 2, 0, 'chute').setOrigin(0.5, 1)
@@ -231,13 +271,18 @@ class PlayScene extends Phaser.Scene {
 
     this.juiceBar = ui(this.add.graphics());
 
-    this.depthText = ui(this.add.text(W - 24, 18, '0 m', {
-      fontFamily: FONT, fontSize: '34px', fontStyle: '800', color: '#ffffff',
-    }).setOrigin(1, 0).setShadow(0, 2, 'rgba(0,0,0,0.25)', 4));
+    // cash is the headline; depth is the quiet driver beneath it
+    this.cashText = ui(this.add.text(W - 24, 14, '$0', {
+      fontFamily: FONT, fontSize: '46px', fontStyle: '800', color: '#ffe08a',
+    }).setOrigin(1, 0).setShadow(0, 2, 'rgba(0,0,0,0.3)', 5));
 
-    this.bestText = ui(this.add.text(W - 24, 58, this.best ? `best ${this.best} m` : '', {
-      fontFamily: FONT, fontSize: '20px', fontStyle: '600', color: '#ffffff',
-    }).setOrigin(1, 0).setAlpha(0.75).setShadow(0, 1, 'rgba(0,0,0,0.25)', 3));
+    this.depthText = ui(this.add.text(W - 24, 68, '0 m', {
+      fontFamily: FONT, fontSize: '22px', fontStyle: '600', color: '#ffffff',
+    }).setOrigin(1, 0).setAlpha(0.85).setShadow(0, 1, 'rgba(0,0,0,0.25)', 3));
+
+    this.bestText = ui(this.add.text(W - 24, 98, this.bestCash ? `best $${this.bestCash.toLocaleString('en-US')}` : '', {
+      fontFamily: FONT, fontSize: '18px', fontStyle: '600', color: '#ffffff',
+    }).setOrigin(1, 0).setAlpha(0.65).setShadow(0, 1, 'rgba(0,0,0,0.25)', 3));
 
     this.muteBtn = ui(this.add.text(24, 18, SFX.muted ? '\u{1F507}' : '\u{1F50A}', {
       fontFamily: FONT, fontSize: '30px',
@@ -255,10 +300,10 @@ class PlayScene extends Phaser.Scene {
     const title = this.add.text(W / 2, H * 0.16, 'SPLAT!', {
       fontFamily: FONT, fontSize: '128px', fontStyle: '800', color: '#ffffff',
     }).setOrigin(0.5).setShadow(0, 5, 'rgba(0,0,0,0.28)', 12).setLetterSpacing(6);
-    const sub1 = this.add.text(W / 2, H * 0.16 + 72, 'hold to open your chute', {
+    const sub1 = this.add.text(W / 2, H * 0.16 + 72, 'catch the robber · dive to close the gap', {
       fontFamily: FONT, fontSize: '30px', fontStyle: '600', color: '#ffffff',
     }).setOrigin(0.5).setAlpha(0.95).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
-    const sub2 = this.add.text(W / 2, H * 0.16 + 110, 'let go to drop · steer with arrows or your finger', {
+    const sub2 = this.add.text(W / 2, H * 0.16 + 110, 'hold to open your chute · let go to dive · steer to aim', {
       fontFamily: FONT, fontSize: '24px', fontStyle: '500', color: '#ffffff',
     }).setOrigin(0.5).setAlpha(0.8).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
     const hint = this.add.text(W / 2, H * 0.72, 'tap to begin', {
@@ -293,12 +338,18 @@ class PlayScene extends Phaser.Scene {
 
   startRun() {
     this.state = 'playing';
-    // score, sky cycle and obstacles all start from wherever he is right now,
-    // so the fall carries straight on from the title with no jump.
+    // score, sky cycle and obstacles all start from wherever he is right now
     this.startY = this.dude.y;
+    this.prevDudeY = this.dude.y;
     this.prevGapC = this.dude.x;
     this.nextRowY = this.dude.y + H * 0.95; // lead-in before the first girder
-    this.dude.body.allowGravity = true;
+    this.dude.body.allowGravity = true;     // he drops into the chase
+    // hand the camera from the robber up to the dude: with a low follow lerp it
+    // slides up to catch our incoming guy while the robber drops away below
+    this.cameras.main.startFollow(this.dude, false, 0.06, 0.06);
+    this.time.delayedCall(1200, () => {
+      if (this.state === 'playing') this.cameras.main.startFollow(this.dude, false, 1, 0.15);
+    });
     this.tweens.add({ targets: this.titleGroup, alpha: 0, duration: 350, onComplete: () => this.titleGroup.setVisible(false) });
   }
 
@@ -448,6 +499,118 @@ class PlayScene extends Phaser.Scene {
       if (screenY < -160) { c.destroy(); this.clouds.splice(i, 1); }
     }
     while (this.clouds.length < 6) this.spawnCloud(false);
+  }
+
+  // ---------- the robber & the cash ----------
+
+  updateRobber(time, dt) {
+    const r = this.robber;
+    const gap = r.y - this.dude.y;
+
+    // steady fall; eased to the dude's pace if he's got too far ahead, so the
+    // chase never becomes hopeless when you've been forced to chute a lot
+    let vy = CFG.robberVy + this.chaseLevel * CFG.robberEscalate;
+    if (this.state === 'playing' && gap > CFG.maxGap) vy = Math.min(vy, this.dude.body.velocity.y);
+    r.body.setVelocityY(vy);
+
+    // weave: on the title he idly drifts; in play he threads the gap below him
+    let targetX = W / 2;
+    if (this.state === 'playing') {
+      let below = null;
+      for (const row of this.rows) if (row.y > r.y + 30 && (!below || row.y < below.y)) below = row;
+      if (below) targetX = below.r.x - below.gapW / 2;
+    } else {
+      targetX = W / 2 + Math.sin(time / 700) * 130;
+    }
+    r.x += (targetX - r.x) * Math.min(1, 4 * dt);
+    r.x = Phaser.Math.Clamp(r.x, 46, W - 46);
+    r.setRotation(Phaser.Math.Clamp((targetX - r.x) * 0.004, -0.22, 0.22));
+
+    if (time > this.nextCashAt) {
+      this.dropCash(r.x, r.y - 34);
+      this.nextCashAt = time + Phaser.Math.Between(CFG.cashDropMs[0], CFG.cashDropMs[1]);
+    }
+
+    if (this.state === 'playing' && !this.caught && gap <= CFG.catchDist) this.catchRobber();
+  }
+
+  dropCash(x, y) {
+    const bag = Math.random() < CFG.cashBagChance;
+    const c = this.cashGroup.create(x + Phaser.Math.Between(-26, 26), y,
+      bag ? 'cash-bag' : 'cash-note').setScale(0.5).setDepth(7);
+    c.value = bag ? CFG.cashBag : CFG.cashNote;
+    c.body.allowGravity = false;
+    c.sway = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    c.baseRot = Phaser.Math.FloatBetween(-0.2, 0.2);
+  }
+
+  updateCash(time) {
+    const cam = this.cameras.main;
+    this.cashGroup.getChildren().slice().forEach((c) => {
+      c.setRotation(c.baseRot + Math.sin(time / 320 + c.sway) * 0.25); // flutter
+      if (c.y < cam.scrollY - 120) this.cashGroup.remove(c, true, true);
+    });
+  }
+
+  grabCash(c) {
+    if (this.state !== 'playing' || c.grabbed) return;
+    c.grabbed = true;
+    this.cash += c.value;
+    SFX.chaching(c.value >= CFG.cashBag);
+    this.floatText('+$' + c.value, c.x, c.y, '#8ef0a0', 24);
+    this.cashGroup.remove(c, true, true);
+  }
+
+  catchRobber() {
+    this.caught = true;
+    const payday = CFG.catchPayday + this.chaseLevel * 500;
+    this.cash += payday;
+    this.chaseLevel++;
+    this.floatText('GOTCHA!  +$' + payday, this.dude.x, this.dude.y - 30, '#ffd166', 34);
+    SFX.payday();
+    if (!this.reducedMotion) this.cameras.main.shake(200, 0.007);
+    this.cashExplode(this.robber.x, this.robber.y);
+    // he bolts to a fresh lead and picks up the pace
+    this.robber.y = this.dude.y + CFG.escapeGap;
+    this.robber.x = Phaser.Math.Clamp(this.robber.x, 60, W - 60);
+    this.time.delayedCall(450, () => { this.caught = false; });
+  }
+
+  cashExplode(x, y) {
+    if (this.reducedMotion) return;
+    const p = this.add.particles(x, y, 'cash-note', {
+      speed: { min: 120, max: 440 }, angle: { min: 190, max: 350 },
+      gravityY: 900, lifespan: { min: 800, max: 1500 },
+      scale: { start: 0.5, end: 0.32 }, rotate: { min: 0, max: 360 },
+      alpha: { start: 1, end: 0 }, emitting: false,
+    }).setDepth(12);
+    p.explode(20);
+    this.time.delayedCall(1600, () => p.destroy());
+  }
+
+  floatText(text, x, y, color, size) {
+    const t = this.add.text(x, y - 40, text, {
+      fontFamily: FONT, fontSize: `${size}px`, fontStyle: '800', color,
+    }).setOrigin(0.5).setDepth(60).setShadow(0, 2, 'rgba(0,0,0,0.35)', 4);
+    this.tweens.add({
+      targets: t, y: t.y - 74, alpha: 0, duration: 850, ease: 'Cubic.out',
+      onComplete: () => t.destroy(),
+    });
+  }
+
+  updateChevron() {
+    const g = this.chevron;
+    g.clear();
+    if (this.state === 'dead') return;
+    const screenY = this.robber.y - this.cameras.main.scrollY;
+    if (screenY < H - 24) return; // he's on-screen (or above) — no need to point
+    const x = Phaser.Math.Clamp(this.robber.x, 44, W - 44);
+    const y = H - 66;
+    const pulse = 0.55 + 0.45 * Math.sin(this.time.now / 240);
+    g.fillStyle(0x26292f, 0.85);
+    g.fillTriangle(x - 26, y, x + 26, y, x, y + 30);
+    g.lineStyle(4, 0xf4d03f, pulse);
+    g.strokeTriangle(x - 26, y, x + 26, y, x, y + 30);
   }
 
   // ---------- birds ----------
@@ -633,11 +796,13 @@ class PlayScene extends Phaser.Scene {
     this.canRestart = false;
 
     const metres = Math.max(0, Math.floor((this.dude.y - this.startY) * CFG.metresPerPx));
-    const isBest = metres > this.best;
+    const money = Math.floor(this.cash);
+    const isBest = money > this.bestCash;
     if (isBest) {
-      this.best = metres;
-      localStorage.setItem('splat.best', String(metres));
+      this.bestCash = money;
+      localStorage.setItem('splat.bestcash', String(money));
     }
+    if (metres > this.best) { this.best = metres; localStorage.setItem('splat.best', String(metres)); }
 
     SFX.wind(0);
     if (this.chuteOpen) this.closeChute(false);
@@ -667,7 +832,7 @@ class PlayScene extends Phaser.Scene {
 
     this.time.delayedCall(splat ? 850 : 650, () => {
       this.canRestart = true;
-      this.showGameOver(metres, isBest);
+      this.showGameOver(metres, money, isBest);
     });
   }
 
@@ -703,26 +868,29 @@ class PlayScene extends Phaser.Scene {
     this.time.delayedCall(1400, () => drops.destroy());
   }
 
-  showGameOver(metres, isBest) {
+  showGameOver(metres, money, isBest) {
     const g = this.add.container(0, 0).setScrollFactor(0).setDepth(120).setAlpha(0);
     const panel = this.add.graphics();
     panel.fillStyle(0x1a2238, 0.82);
-    panel.fillRoundedRect(W / 2 - 260, H * 0.30, 520, 300, 28);
-    const t1 = this.add.text(W / 2, H * 0.30 + 70, 'splat.', {
-      fontFamily: FONT, fontSize: '64px', fontStyle: '800', color: '#ffffff',
+    panel.fillRoundedRect(W / 2 - 260, H * 0.30, 520, 320, 28);
+    const t1 = this.add.text(W / 2, H * 0.30 + 66, 'splat.', {
+      fontFamily: FONT, fontSize: '60px', fontStyle: '800', color: '#ffffff',
     }).setOrigin(0.5);
-    const t2 = this.add.text(W / 2, H * 0.30 + 150, `you fell ${metres} m`, {
-      fontFamily: FONT, fontSize: '34px', fontStyle: '600', color: '#ffffff',
+    const t2 = this.add.text(W / 2, H * 0.30 + 138, `$${money.toLocaleString('en-US')} recovered`, {
+      fontFamily: FONT, fontSize: '36px', fontStyle: '700', color: '#ffe08a',
     }).setOrigin(0.5);
-    const t3 = this.add.text(W / 2, H * 0.30 + 200,
-      isBest ? 'new best!' : `best ${this.best} m`, {
-        fontFamily: FONT, fontSize: '26px', fontStyle: '600',
+    const t3 = this.add.text(W / 2, H * 0.30 + 184, `${metres} m fallen`, {
+      fontFamily: FONT, fontSize: '22px', fontStyle: '500', color: '#ffffff',
+    }).setOrigin(0.5).setAlpha(0.7);
+    const t4 = this.add.text(W / 2, H * 0.30 + 224,
+      isBest ? 'new best!' : `best $${this.bestCash.toLocaleString('en-US')}`, {
+        fontFamily: FONT, fontSize: '24px', fontStyle: '600',
         color: isBest ? '#ffd166' : '#ffffff',
       }).setOrigin(0.5).setAlpha(isBest ? 1 : 0.7);
-    const t4 = this.add.text(W / 2, H * 0.30 + 252, 'tap to go again', {
+    const t5 = this.add.text(W / 2, H * 0.30 + 272, 'tap to go again', {
       fontFamily: FONT, fontSize: '26px', fontStyle: '700', color: '#ffffff',
     }).setOrigin(0.5).setAlpha(0.9);
-    g.add([panel, t1, t2, t3, t4]);
+    g.add([panel, t1, t2, t3, t4, t5]);
     this.tweens.add({ targets: g, alpha: 1, duration: 250 });
     this.overGroup = g;
   }
@@ -751,11 +919,16 @@ class PlayScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
 
     if (this.state === 'ready') {
-      // animated title: he plummets through the day sky, hair streaming
-      const speed01 = Phaser.Math.Clamp(this.dude.body.velocity.y / CFG.terminalVy, 0, 1);
-      this.positionHair(time, 0.28 + 0.8 * speed01, dt);
+      // title: the camera watches the robber fall and shed cash; our guy is
+      // pinned a screen above him, off-frame, waiting to give chase
+      this.updateRobber(time, dt);
+      this.updateCash(time);
+      this.dude.y = this.robber.y - CFG.titleGap;
+      this.dude.x = W / 2;
       this.updateClouds();
       this.updateSky(0); // pinned to the first sky band
+      this.cashText.setText('$0');
+      this.depthText.setText('0 m');
       this.drawJuice();
       return;
     }
@@ -813,12 +986,19 @@ class PlayScene extends Phaser.Scene {
 
       this.updateRows(dt);
       this.updateBirds(time);
+      this.updateRobber(time, dt);
+      this.updateCash(time);
+      // you're on the case: a slow trickle of cash for every metre you fall
+      this.cash += Math.max(0, this.dude.y - this.prevDudeY) * CFG.depthTrickle;
+      this.prevDudeY = this.dude.y;
+      this.cashText.setText('$' + Math.floor(this.cash).toLocaleString('en-US'));
       this.depthText.setText(`${Math.max(0, Math.floor((this.dude.y - this.startY) * CFG.metresPerPx))} m`);
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
     }
 
     this.positionHair(time, 0.28 + 0.8 * speed01, dt);
     this.drawChute(time);
+    this.updateChevron();
     this.updateClouds();
     this.updateSky(Math.max(0, this.dude.y - this.startY));
     this.drawJuice();
