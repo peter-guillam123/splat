@@ -151,9 +151,10 @@ class PlayScene extends Phaser.Scene {
   }
 
   buildRobber() {
-    // the cash he sheds is a visual trail only — you only get paid by catching
-    // HIM, not by falling through the notes
+    // grab the cash he sheds for money; but to claim HIM you must touch him,
+    // not merely fall past his depth
     this.cashGroup = this.physics.add.group({ allowGravity: false });
+    this.physics.add.overlap(this.dude, this.cashGroup, (dude, c) => this.grabCash(c));
 
     this.robber = this.physics.add.sprite(W / 2, this.startY + CFG.titleGap, 'robber-fall')
       .setScale(0.5).setDepth(10);
@@ -161,7 +162,6 @@ class PlayScene extends Phaser.Scene {
     this.robber.body.setVelocityY(CFG.robberVy);
     this.robber.body.setSize(140, 120).setOffset(26, 68); // generous "touch" area
     this.caught = false; // brief guard after a catch
-    // you catch him by actually touching him now, not just reaching his depth
     this.physics.add.overlap(this.dude, this.robber, () => {
       if (this.state === 'playing' && !this.handoff && !this.caught) this.catchRobber();
     });
@@ -568,6 +568,15 @@ class PlayScene extends Phaser.Scene {
       c.setRotation(c.baseRot + Math.sin(time / 320 + c.sway) * 0.25); // flutter
       if (c.y < cam.scrollY - 120) this.cashGroup.remove(c, true, true);
     });
+  }
+
+  grabCash(c) {
+    if (this.state !== 'playing' || c.grabbed) return;
+    c.grabbed = true;
+    this.cash += c.value;
+    SFX.chaching(c.value >= CFG.cashBag);
+    this.floatText('+$' + c.value, c.x, c.y, '#8ef0a0', 24);
+    this.cashGroup.remove(c, true, true);
   }
 
   catchRobber() {
