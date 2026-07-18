@@ -146,6 +146,13 @@
       lfo.start(t); lfo.stop(t + 0.23);
     }
 
+    boom() { // grenade blast: a low thump + a burst of noise
+      if (!this.ctx) return;
+      this._noiseBurst(0.4, 0.34, 'lowpass', 900);
+      this._tone('sine', 160, 34, 0.5, 0.34);
+      this._tone('triangle', 90, 30, 0.4, 0.2, 0.02);
+    }
+
     screech() { // a wobbly falling scream as you go
       if (!this.ctx) return;
       const t = this.ctx.currentTime;

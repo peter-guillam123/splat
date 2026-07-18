@@ -52,9 +52,14 @@ const CFG = {
   cashNote: 60,          // $ per note
   cashBag: 350,          // $ per bag
   catchPayday: 1000,     // $ for catching him (grows with the chase level)
-  depthTrickle: 0.02,    // $ per px fallen (you're on the case)
   holdFrac: 0.36,        // where the dude is held on screen (fraction from top)
   titleFrac: 0.5,        // where the robber sits on the title
+  // --- grenades on the trail ---
+  depthGrenades: 7000,   // he starts lobbing grenades here (~70 m)
+  grenadeChance: 0.24,   // chance a drop is a grenade rather than cash
+  grenadeFuseMs: [2200, 3300], // fuse before it blows on its own
+  grenadeFall: 55,       // gentle drift down as it sits on the trail
+  blastRadius: 155,      // how near the blast has to be to tumble you
 };
 
 // Sky bands the fall cycles through: day → sunset → night → dawn → day…
@@ -89,6 +94,7 @@ class PlayScene extends Phaser.Scene {
     this.load.svg('robber-fall', 'assets/robber-fall.svg', { width: 192, height: 256 });
     this.load.svg('cash-note', 'assets/cash-note.svg', { width: 96, height: 56 });
     this.load.svg('cash-bag', 'assets/cash-bag.svg', { width: 88, height: 96 });
+    this.load.svg('grenade', 'assets/grenade.svg', { width: 128, height: 160 });
   }
 
   create() {
@@ -108,7 +114,6 @@ class PlayScene extends Phaser.Scene {
     this.cash = 0;         // headline score, in dollars
     this.chaseLevel = 0;   // rises each catch; the robber gets faster
     this.nextCashAt = 0;
-    this.prevDudeY = this.startY; // for the depth-trickle score
 
     this.cameras.main.setBounds(0, -2000, W, 4e9);
 
@@ -157,6 +162,10 @@ class PlayScene extends Phaser.Scene {
     this.cashGroup = this.physics.add.group({ allowGravity: false });
     this.physics.add.overlap(this.dude, this.cashGroup, (dude, c) => this.grabCash(c));
 
+    // grenades he lobs behind him — touch one and it goes off
+    this.grenadeGroup = this.physics.add.group({ allowGravity: false });
+    this.physics.add.overlap(this.dude, this.grenadeGroup, (dude, g) => this.detonate(g));
+
     this.robber = this.physics.add.sprite(W / 2, this.startY + CFG.titleGap, 'robber-fall')
       .setScale(0.5).setDepth(10);
     this.robber.body.allowGravity = false;
@@ -202,6 +211,19 @@ class PlayScene extends Phaser.Scene {
       g.fillStyle(0xff5a70, 0.6); g.fillCircle(6, 6, 2);
       g.generateTexture('drop', 16, 16);
       g.destroy();
+    }
+    if (!this.textures.exists('flash')) {
+      // soft radial flash for the grenade blast
+      const c = this.textures.createCanvas('flash', 64, 64);
+      const ctx = c.getContext();
+      const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.35, 'rgba(255,224,150,0.95)');
+      grad.addColorStop(0.7, 'rgba(255,138,44,0.6)');
+      grad.addColorStop(1, 'rgba(255,138,44,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 64);
+      c.refresh();
     }
     if (!this.textures.exists('feather')) {
       // a little curved feather (tinted per bird when it bursts)
@@ -347,7 +369,6 @@ class PlayScene extends Phaser.Scene {
   startRun() {
     this.state = 'playing';
     this.startY = this.dude.y;
-    this.prevDudeY = this.dude.y;
     this.prevGapC = this.dude.x;
     this.dude.body.allowGravity = true; // he drops into the chase
     // The handoff: the camera freezes here. The robber slides out the bottom
@@ -535,7 +556,12 @@ class PlayScene extends Phaser.Scene {
     r.setRotation(Phaser.Math.Clamp((targetX - r.x) * 0.004, -0.22, 0.22));
 
     if (time > this.nextCashAt) {
-      this.dropCash(r.x, r.y - 34);
+      const depth = this.dude.y - this.startY;
+      if (this.state === 'playing' && depth > CFG.depthGrenades && Math.random() < CFG.grenadeChance) {
+        this.dropGrenade(r.x, r.y - 30, time);
+      } else {
+        this.dropCash(r.x, r.y - 34);
+      }
       this.nextCashAt = time + Phaser.Math.Between(CFG.cashDropMs[0], CFG.cashDropMs[1]);
     }
 
@@ -578,6 +604,60 @@ class PlayScene extends Phaser.Scene {
     SFX.chaching(c.value >= CFG.cashBag);
     this.floatText('+$' + c.value, c.x, c.y, '#8ef0a0', 24);
     this.cashGroup.remove(c, true, true);
+  }
+
+  dropGrenade(x, y, time) {
+    const g = this.grenadeGroup.create(Phaser.Math.Clamp(x + Phaser.Math.Between(-24, 24), 40, W - 40), y, 'grenade')
+      .setScale(0.5).setDepth(7);
+    g.body.allowGravity = false;
+    g.body.setVelocityY(CFG.grenadeFall);
+    g.body.setSize(120, 130).setOffset(4, 42); // the round body, not the fuse
+    g.fuseAt = time + Phaser.Math.Between(CFG.grenadeFuseMs[0], CFG.grenadeFuseMs[1]);
+    g.spin = Phaser.Math.FloatBetween(-1.2, 1.2);
+  }
+
+  updateGrenades(time) {
+    const cam = this.cameras.main;
+    this.grenadeGroup.getChildren().slice().forEach((g) => {
+      g.rotation += g.spin * 0.02; // slow tumble as it falls
+      const left = g.fuseAt - time;
+      // flash red as the fuse runs out, faster the closer it gets
+      if (left < 900) {
+        const hz = left < 350 ? 26 : 14;
+        g.setTint(Math.sin(time / 1000 * hz) > 0 ? 0xff5a3c : 0xffffff);
+      }
+      if (left <= 0) { this.detonate(g); return; }
+      if (g.y < cam.scrollY - 140) this.grenadeGroup.remove(g, true, true);
+    });
+  }
+
+  detonate(g) {
+    if (g.gone) return;
+    g.gone = true;
+    const x = g.x, y = g.y;
+    this.grenadeGroup.remove(g, true, true);
+    this.explode(x, y);
+    // caught in the blast? knocked into a tumble
+    if ((this.state === 'playing') &&
+        Phaser.Math.Distance.Between(x, y, this.dude.x, this.dude.y) < CFG.blastRadius) {
+      this.startTumble();
+    }
+  }
+
+  explode(x, y) {
+    SFX.boom();
+    if (!this.reducedMotion) this.cameras.main.shake(220, 0.012);
+    if (this.reducedMotion) return;
+    const flash = this.add.image(x, y, 'flash').setDepth(12).setScale(0.6).setAlpha(0.95);
+    this.tweens.add({ targets: flash, scale: 4.2, alpha: 0, duration: 320, ease: 'Cubic.out', onComplete: () => flash.destroy() });
+    const p = this.add.particles(x, y, 'puff', {
+      speed: { min: 120, max: 460 }, angle: { min: 0, max: 360 },
+      gravityY: 300, lifespan: { min: 500, max: 1000 },
+      scale: { start: 1.1, end: 0 }, alpha: { start: 1, end: 0 },
+      tint: [0xffe6a0, 0xff8a2c, 0xd14a1e, 0x555555], emitting: false,
+    }).setDepth(12);
+    p.explode(26);
+    this.time.delayedCall(1100, () => p.destroy());
   }
 
   catchRobber() {
@@ -988,7 +1068,6 @@ class PlayScene extends Phaser.Scene {
       if (reached || time - this.handoffStart > 3500) {
         this.handoff = false;
         this.nextRowY = this.dude.y + H * 0.9; // a clear screen before the first girder
-        this.prevDudeY = this.dude.y;
       }
     }
 
@@ -1042,9 +1121,8 @@ class PlayScene extends Phaser.Scene {
       if (!this.handoff) { this.updateRows(dt); this.updateBirds(time); }
       this.updateRobber(time, dt);
       this.updateCash(time);
-      // you're on the case: a slow trickle of cash for every metre you fall
-      this.cash += Math.max(0, this.dude.y - this.prevDudeY) * CFG.depthTrickle;
-      this.prevDudeY = this.dude.y;
+      this.updateGrenades(time);
+      // money is earned, never given: only cash pickups and catching him pay
       this.cashText.setText('$' + Math.floor(this.cash).toLocaleString('en-US'));
       this.depthText.setText(`${Math.max(0, Math.floor((this.dude.y - this.startY) * CFG.metresPerPx))} m`);
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
