@@ -22,10 +22,16 @@ const CFG = {
   juiceRefill: 10,       // per second while closed
   juiceNearMiss: 20,
   nearMissDist: 46,      // px from girder edge that counts as a graze
-  rowGapStart: 260,      // gap width, shrinks with depth
-  rowGapMin: 132,
-  rowIntervalStart: 430, // vertical px between girder rows
-  rowIntervalMin: 290,
+  rowGapStart: 270,      // gap width, shrinks with depth
+  rowGapMin: 138,
+  rowUnit: 440,          // one vertical "beat"; spacing is a whole number of
+                         // these, so the rhythm stays readable with movers
+  moverGapBonus: 16,     // moving rows get a slightly wider gap, to stay fair
+  wobbleRange: 95,       // half-range a wobbling gap drifts around its centre
+  wobbleSpeed: [28, 52], // px/s for a wobbling gap
+  scrollSpeed: [70, 120],// px/s for a fully scrolling gap
+  depthWobble: 6000,     // wobbling gaps start easing in here (~60 m)
+  depthScroll: 16000,    // fully scrolling gaps start easing in here (~160 m)
   metresPerPx: 1 / 100,
 };
 
@@ -267,12 +273,41 @@ class PlayScene extends Phaser.Scene {
 
   // ---------- girder rows ----------
 
+  // Which motion a row spawns with, by depth. Static first; wobble eases in;
+  // full scroll comes later. Static never disappears, so the beat always has
+  // anchors — it never flips to all-moving at once.
+  motionFor(depth) {
+    if (depth < CFG.depthWobble) return 'static';
+    const r = Math.random();
+    if (depth < CFG.depthScroll) {
+      const pW = Phaser.Math.Linear(0.15, 0.5, (depth - CFG.depthWobble) / (CFG.depthScroll - CFG.depthWobble));
+      return r < pW ? 'wobble' : 'static';
+    }
+    const k = Math.min((depth - CFG.depthScroll) / 20000, 1);
+    const pScroll = Phaser.Math.Linear(0.1, 0.4, k);
+    if (r < pScroll) return 'scroll';
+    if (r < pScroll + 0.42) return 'wobble';
+    return 'static';
+  }
+
+  // Spacing is a whole number of beats: mostly one, sometimes a two- or
+  // three-beat breather (a "gap") to vary the rhythm and give a rest.
+  pickInterval() {
+    const r = Math.random();
+    if (r < 0.74) return 1;
+    if (r < 0.92) return 2;
+    return 3;
+  }
+
   spawnRow(y) {
     const depth = Math.max(0, y - this.startY);
-    const gapW = Phaser.Math.Linear(CFG.rowGapStart, CFG.rowGapMin, Math.min(depth / 40000, 1));
+    const type = this.motionFor(depth);
+    let gapW = Phaser.Math.Linear(CFG.rowGapStart, CFG.rowGapMin, Math.min(depth / 40000, 1));
+    if (type !== 'static') gapW += CFG.moverGapBonus;
     const margin = 80 + gapW / 2;
-    // early rows keep the gap near the middle; later ones wander further
-    const wander = Math.round(Phaser.Math.Linear(180, 300, Math.min(depth / 15000, 1)));
+    // limit how far the gap jumps from the previous row so the beat reads;
+    // movers jump less since they'll also be sliding
+    const wander = type === 'static' ? 240 : 150;
     const gapC = Phaser.Math.Clamp(
       this.prevGapC + Phaser.Math.Between(-wander, wander), margin, W - margin);
     this.prevGapC = gapC;
@@ -289,21 +324,27 @@ class PlayScene extends Phaser.Scene {
     l.body.setImmovable(true); r.body.setImmovable(true);
     l.body.allowGravity = false; r.body.allowGravity = false;
 
-    const moving = depth > 12000 && Math.random() < 0.35;
-    const speed = moving ? Phaser.Math.Between(50, 110) * (Math.random() < 0.5 ? 1 : -1) : 0;
+    // The gap centre bounces between boundL..boundR: a wobble stays near its
+    // spawn centre; a scroll traverses (almost) the whole width.
+    let speed = 0, boundL = gapC, boundR = gapC;
+    if (type === 'wobble') {
+      boundL = Math.max(margin, gapC - CFG.wobbleRange);
+      boundR = Math.min(W - margin, gapC + CFG.wobbleRange);
+      speed = Phaser.Math.Between(CFG.wobbleSpeed[0], CFG.wobbleSpeed[1]) * (Math.random() < 0.5 ? 1 : -1);
+    } else if (type === 'scroll') {
+      boundL = margin; boundR = W - margin;
+      speed = Phaser.Math.Between(CFG.scrollSpeed[0], CFG.scrollSpeed[1]) * (Math.random() < 0.5 ? 1 : -1);
+    }
     if (speed) { l.body.setVelocityX(speed); r.body.setVelocityX(speed); }
 
-    this.rows.push({ l, r, y, gapW, speed, passed: false });
+    this.rows.push({ l, r, y, gapW, type, speed, boundL, boundR, passed: false });
   }
 
   updateRows(dt) {
     const cam = this.cameras.main;
     while (this.nextRowY < cam.scrollY + H * 2) {
       this.spawnRow(this.nextRowY);
-      const depth = this.nextRowY - this.startY;
-      const interval = Phaser.Math.Linear(
-        CFG.rowIntervalStart, CFG.rowIntervalMin, Math.min(depth / 30000, 1));
-      this.nextRowY += interval * Phaser.Math.FloatBetween(0.85, 1.15);
+      this.nextRowY += CFG.rowUnit * this.pickInterval();
     }
 
     for (let i = this.rows.length - 1; i >= 0; i--) {
@@ -311,10 +352,10 @@ class PlayScene extends Phaser.Scene {
 
       if (row.speed) {
         const centre = row.r.x - row.gapW / 2; // r.x is the gap's right edge
-        if (centre - row.gapW / 2 < 90 && row.speed < 0) {
+        if (centre <= row.boundL && row.speed < 0) {
           row.speed = -row.speed;
           row.l.body.setVelocityX(row.speed); row.r.body.setVelocityX(row.speed);
-        } else if (centre + row.gapW / 2 > W - 90 && row.speed > 0) {
+        } else if (centre >= row.boundR && row.speed > 0) {
           row.speed = -row.speed;
           row.l.body.setVelocityX(row.speed); row.r.body.setVelocityX(row.speed);
         }
