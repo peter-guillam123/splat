@@ -79,7 +79,17 @@ class PlayScene extends Phaser.Scene {
     this.buildInput();
 
     this.girders = this.physics.add.group({ allowGravity: false, immovable: true });
-    this.physics.add.collider(this.dude, this.girders, () => this.die());
+    this.physics.add.collider(this.dude, this.girders, (dude, girder) => {
+      // hitting a surface top/bottom is a direct connect -> splat;
+      // clipping the end of a bar is a side hit -> tumble
+      const t = dude.body.touching;
+      const splat = t.down || t.up;
+      if (splat) {
+        // rest the pancake on the surface it actually hit
+        dude.y = t.down ? girder.body.top - 6 : girder.body.bottom + 6;
+      }
+      this.die(splat);
+    });
 
     for (let i = 0; i < 5; i++) this.spawnCloud(true);
 
@@ -139,8 +149,7 @@ class PlayScene extends Phaser.Scene {
 
     this.dude = this.physics.add.sprite(W / 2, this.startY, 'dude-fall')
       .setScale(0.5).setDepth(10);
-    // body covers the torso+head, forgiving at the limbs (frame is 192x256)
-    this.dude.body.setSize(88, 160).setOffset(52, 50);
+    this.poseBody(false); // flat-skydiver hitbox to start
     this.dude.body.allowGravity = false; // off until the run starts
     this.dude.setMaxVelocity(CFG.maxVxFree, CFG.terminalVy);
 
@@ -375,9 +384,17 @@ class PlayScene extends Phaser.Scene {
 
   // ---------- chute ----------
 
+  // Hitbox follows the pose: tall+narrow hanging under the chute, wide+short
+  // for the flat skydiver. Covers head+torso, forgiving at the splayed limbs.
+  poseBody(open) {
+    if (open) this.dude.body.setSize(56, 150).setOffset(68, 50);
+    else this.dude.body.setSize(64, 124).setOffset(64, 48);
+  }
+
   deploy() {
     this.chuteOpen = true;
     this.dude.setTexture('dude-hang');
+    this.poseBody(true);
     this.dude.setMaxVelocity(CFG.maxVxOpen, CFG.terminalVy);
     // drive vy by hand while open so the lift is predictable; gravity off
     this.dude.body.allowGravity = false;
@@ -403,6 +420,7 @@ class PlayScene extends Phaser.Scene {
   closeChute(ranDry) {
     this.chuteOpen = false;
     this.dude.setTexture('dude-fall');
+    this.poseBody(false);
     this.dude.body.allowGravity = true; // hand vertical control back to gravity
     this.dude.setMaxVelocity(CFG.maxVxFree, CFG.terminalVy);
     this.tweens.add({
@@ -439,7 +457,7 @@ class PlayScene extends Phaser.Scene {
 
   // ---------- death / UI ----------
 
-  die() {
+  die(splat) {
     if (this.state !== 'playing') return;
     this.state = 'dead';
     this.canRestart = false;
@@ -453,13 +471,27 @@ class PlayScene extends Phaser.Scene {
 
     SFX.crash();
     SFX.wind(0);
-    if (!this.reducedMotion) this.cameras.main.shake(220, 0.008);
-    this.puffs.explode(16, this.dude.x, this.dude.y);
-
     if (this.chuteOpen) this.closeChute(false);
-    this.dude.setAngularVelocity(Phaser.Math.Between(0, 1) ? 260 : -260);
-    this.dude.setVelocityY(Math.min(this.dude.body.velocity.y, 200));
     this.cameras.main.stopFollow();
+
+    if (splat) {
+      // direct hit: pancake onto the surface and stick
+      if (!this.reducedMotion) this.cameras.main.shake(240, 0.013);
+      this.puffs.explode(24, this.dude.x, this.dude.y);
+      this.hair.setVisible(false);
+      this.dude.setTexture('dude-fall');
+      this.dude.setAngularVelocity(0).setRotation(0);
+      this.dude.setVelocity(0, 0).setAcceleration(0, 0);
+      this.dude.body.allowGravity = false;
+      if (this.reducedMotion) this.dude.setScale(0.74, 0.09);
+      else this.tweens.add({ targets: this.dude, scaleX: 0.74, scaleY: 0.09, duration: 140, ease: 'Back.in' });
+    } else {
+      // glancing hit: tumble off the edge and keep falling
+      if (!this.reducedMotion) this.cameras.main.shake(200, 0.008);
+      this.puffs.explode(14, this.dude.x, this.dude.y);
+      this.dude.setAngularVelocity(Phaser.Math.Between(0, 1) ? 300 : -300);
+      this.dude.setVelocityY(Math.min(this.dude.body.velocity.y, 200));
+    }
 
     this.time.delayedCall(650, () => {
       this.canRestart = true;
