@@ -169,7 +169,8 @@ class PlayScene extends Phaser.Scene {
     this.dude = this.physics.add.sprite(W / 2, this.startY, 'dude-fall')
       .setScale(0.5).setDepth(10);
     this.poseBody(false); // flat-skydiver hitbox to start
-    this.dude.body.allowGravity = false; // off until the run starts
+    // gravity is on from the title screen: he plummets through the day sky
+    // behind the title, and the first tap simply starts spawning obstacles.
     this.dude.setMaxVelocity(CFG.maxVxFree, CFG.terminalVy);
 
     this.chute = this.add.image(W / 2, 0, 'chute').setOrigin(0.5, 1)
@@ -220,7 +221,7 @@ class PlayScene extends Phaser.Scene {
     const sub2 = this.add.text(W / 2, H * 0.16 + 110, 'let go to drop · steer with arrows or your finger', {
       fontFamily: FONT, fontSize: '24px', fontStyle: '500', color: '#ffffff',
     }).setOrigin(0.5).setAlpha(0.8).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
-    const hint = this.add.text(W / 2, H * 0.72, 'tap anywhere to fall', {
+    const hint = this.add.text(W / 2, H * 0.72, 'tap to begin', {
       fontFamily: FONT, fontSize: '28px', fontStyle: '700', color: '#ffffff',
     }).setOrigin(0.5).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
     this.titleGroup.add([title, sub1, sub2, hint]);
@@ -252,6 +253,11 @@ class PlayScene extends Phaser.Scene {
 
   startRun() {
     this.state = 'playing';
+    // score, sky cycle and obstacles all start from wherever he is right now,
+    // so the fall carries straight on from the title with no jump.
+    this.startY = this.dude.y;
+    this.prevGapC = this.dude.x;
+    this.nextRowY = this.dude.y + H * 0.95; // lead-in before the first girder
     this.dude.body.allowGravity = true;
     this.tweens.add({ targets: this.titleGroup, alpha: 0, duration: 350, onComplete: () => this.titleGroup.setVisible(false) });
   }
@@ -590,10 +596,11 @@ class PlayScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
 
     if (this.state === 'ready') {
-      this.dude.y = this.startY + Math.sin(time / 600) * 10;
-      this.positionHair(time, 0.35);
+      // animated title: he plummets through the day sky, hair streaming
+      const speed01 = Phaser.Math.Clamp(this.dude.body.velocity.y / CFG.terminalVy, 0, 1);
+      this.positionHair(time, 0.28 + 0.8 * speed01, dt);
       this.updateClouds();
-      this.updateSky(0);
+      this.updateSky(0); // pinned to the first sky band
       this.drawJuice();
       return;
     }
