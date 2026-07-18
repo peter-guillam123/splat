@@ -151,14 +151,20 @@ class PlayScene extends Phaser.Scene {
   }
 
   buildRobber() {
+    // the cash he sheds is a visual trail only — you only get paid by catching
+    // HIM, not by falling through the notes
     this.cashGroup = this.physics.add.group({ allowGravity: false });
-    this.physics.add.overlap(this.dude, this.cashGroup, (dude, c) => this.grabCash(c));
 
     this.robber = this.physics.add.sprite(W / 2, this.startY + CFG.titleGap, 'robber-fall')
       .setScale(0.5).setDepth(10);
     this.robber.body.allowGravity = false;
     this.robber.body.setVelocityY(CFG.robberVy);
+    this.robber.body.setSize(140, 120).setOffset(26, 68); // generous "touch" area
     this.caught = false; // brief guard after a catch
+    // you catch him by actually touching him now, not just reaching his depth
+    this.physics.add.overlap(this.dude, this.robber, () => {
+      if (this.state === 'playing' && !this.handoff && !this.caught) this.catchRobber();
+    });
 
     // downward chevron shown when he's below the view
     this.chevron = this.add.graphics().setScrollFactor(0).setDepth(95);
@@ -532,7 +538,18 @@ class PlayScene extends Phaser.Scene {
       this.nextCashAt = time + Phaser.Math.Between(CFG.cashDropMs[0], CFG.cashDropMs[1]);
     }
 
-    if (this.state === 'playing' && !this.handoff && !this.caught && gap <= CFG.catchDist) this.catchRobber();
+    // overtook him without touching? he gets away off the top — a fresh one
+    // is already falling below (you chase the next of many)
+    if (this.state === 'playing' && !this.handoff && r.y < this.cameras.main.scrollY - 120) {
+      this.newRobber();
+    }
+  }
+
+  // send the robber to a fresh lead below and reset him as the next target
+  newRobber() {
+    this.robber.y = this.dude.y + CFG.escapeGap;
+    this.robber.x = Phaser.Math.Between(120, W - 120);
+    this.robber.setVelocityY(CFG.robberVy + this.chaseLevel * CFG.robberEscalate);
   }
 
   dropCash(x, y) {
@@ -553,27 +570,16 @@ class PlayScene extends Phaser.Scene {
     });
   }
 
-  grabCash(c) {
-    if (this.state !== 'playing' || c.grabbed) return;
-    c.grabbed = true;
-    this.cash += c.value;
-    SFX.chaching(c.value >= CFG.cashBag);
-    this.floatText('+$' + c.value, c.x, c.y, '#8ef0a0', 24);
-    this.cashGroup.remove(c, true, true);
-  }
-
   catchRobber() {
     this.caught = true;
     const payday = CFG.catchPayday + this.chaseLevel * 500;
     this.cash += payday;
     this.chaseLevel++;
-    this.floatText('GOTCHA!  +$' + payday, this.dude.x, this.dude.y - 30, '#ffd166', 34);
+    this.floatText('GOTCHA!  +$' + payday.toLocaleString('en-US'), this.dude.x, this.dude.y - 30, '#ffd166', 34);
     SFX.payday();
     if (!this.reducedMotion) this.cameras.main.shake(200, 0.007);
     this.cashExplode(this.robber.x, this.robber.y);
-    // he bolts to a fresh lead and picks up the pace
-    this.robber.y = this.dude.y + CFG.escapeGap;
-    this.robber.x = Phaser.Math.Clamp(this.robber.x, 60, W - 60);
+    this.newRobber(); // the next one is already falling below
     this.time.delayedCall(450, () => { this.caught = false; });
   }
 
