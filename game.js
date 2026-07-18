@@ -120,15 +120,16 @@ class PlayScene extends Phaser.Scene {
 
     this.girders = this.physics.add.group({ allowGravity: false, immovable: true });
     this.physics.add.collider(this.dude, this.girders, (dude, girder) => {
-      // hitting a surface top/bottom is a direct connect -> splat;
-      // clipping the end of a bar is a side hit -> tumble
+      // landing on a surface (top/bottom) is a splat; clipping the end of a bar
+      // is a side hit that starts a tumble. A tumble that then lands on a
+      // surface splats — that's when it's really over.
       const t = dude.body.touching;
-      const splat = t.down || t.up;
-      if (splat) {
-        // rest the pancake on the surface it actually hit
-        dude.y = t.down ? girder.body.top - 6 : girder.body.bottom + 6;
+      const topHit = t.down || t.up;
+      if (this.state === 'playing') {
+        if (topHit) this.splatDeath(girder, t); else this.startTumble();
+      } else if (this.state === 'tumbling' && topHit) {
+        this.splatDeath(girder, t);
       }
-      this.die(splat);
     });
 
     // ---- birds ----
@@ -668,10 +669,10 @@ class PlayScene extends Phaser.Scene {
     if (this.state !== 'playing' || bird.hit) return;
     bird.hit = true;
     if (bird.big) {
-      // a wall with wings: knocked out of the sky, tumble (never a splat)
+      // a wall with wings: knocked into a tumble, which ends when he lands
       this.featherBurst(bird.x, bird.y, true);
       SFX.squawk(false);
-      this.die(false);
+      this.startTumble();
     } else {
       // clattered by a small one: a bounded shove its way + a moment of fluster
       const dir = Math.sign(bird.body.velocity.x) || 1;
@@ -806,51 +807,74 @@ class PlayScene extends Phaser.Scene {
 
   // ---------- death / UI ----------
 
-  die(splat) {
-    if (this.state !== 'playing') return;
-    this.state = 'dead';
-    this.canRestart = false;
-
+  // Lock the score at the moment of the fatal contact (the tumble that follows
+  // doesn't earn anything).
+  lockScore() {
     const metres = Math.max(0, Math.floor((this.dude.y - this.startY) * CFG.metresPerPx));
     const money = Math.floor(this.cash);
-    const isBest = money > this.bestCash;
-    if (isBest) {
-      this.bestCash = money;
-      localStorage.setItem('splat.bestcash', String(money));
-    }
+    this.deathIsBest = money > this.bestCash;
+    if (this.deathIsBest) { this.bestCash = money; localStorage.setItem('splat.bestcash', String(money)); }
     if (metres > this.best) { this.best = metres; localStorage.setItem('splat.best', String(metres)); }
+    this.deathMetres = metres;
+    this.deathMoney = money;
+  }
 
+  gameOverSoon(delay) {
+    this.time.delayedCall(delay, () => {
+      this.canRestart = true;
+      if (!this.overGroup) this.showGameOver(this.deathMetres, this.deathMoney, this.deathIsBest);
+    });
+  }
+
+  // A glancing/side hit (or a big bird) knocks him into a spin — but he's not
+  // done yet: he keeps falling, tumbling, until he lands on a surface and
+  // splats (see splatDeath). If he threads every gap, a safety timer ends it.
+  startTumble() {
+    if (this.state !== 'playing') return;
+    this.state = 'tumbling';
+    this.canRestart = false;
+    this.lockScore();
     SFX.wind(0);
     SFX.screech();
+    SFX.crash();
+    if (this.chuteOpen) this.closeChute(false);
+    this.dude.setAngularVelocity(Phaser.Math.Between(0, 1) ? 320 : -320);
+    this.dude.body.setAcceleration(0, 0);
+    this.dude.body.setVelocityY(Math.min(this.dude.body.velocity.y, 260));
+    if (!this.reducedMotion) this.cameras.main.shake(160, 0.007);
+    this.puffs.explode(12, this.dude.x, this.dude.y);
+    this.time.delayedCall(3400, () => {
+      if (this.state === 'tumbling') { this.state = 'dead'; this.gameOverSoon(0); }
+    });
+  }
+
+  // A direct connect with a surface — either straight down while playing, or the
+  // moment a tumble lands. He pancakes onto it and that's the end.
+  splatDeath(girder, t) {
+    if (this.state !== 'playing' && this.state !== 'tumbling') return;
+    const wasPlaying = this.state === 'playing';
+    this.state = 'dead';
+    this.canRestart = false;
+    if (wasPlaying) this.lockScore(); // a tumble already locked it
+
+    SFX.wind(0);
+    if (wasPlaying) SFX.screech();
+    SFX.squelch();
     if (this.chuteOpen) this.closeChute(false);
     this.cameras.main.stopFollow();
 
-    if (splat) {
-      // direct hit: pancake onto the surface and stick
-      SFX.squelch();
-      if (!this.reducedMotion) this.cameras.main.shake(320, 0.02);
-      this.puffs.explode(24, this.dude.x, this.dude.y);
-      this.hair.setVisible(false);
-      this.dude.setTexture('dude-fall');
-      this.dude.setAngularVelocity(0).setRotation(0);
-      this.dude.setVelocity(0, 0).setAcceleration(0, 0);
-      this.dude.body.allowGravity = false;
-      if (this.reducedMotion) this.dude.setScale(0.74, 0.09);
-      else this.tweens.add({ targets: this.dude, scaleX: 0.74, scaleY: 0.09, duration: 140, ease: 'Back.in' });
-      this.splatBurst(this.dude.x, this.dude.y);
-    } else {
-      // glancing hit: tumble off the edge and keep falling
-      SFX.crash();
-      if (!this.reducedMotion) this.cameras.main.shake(200, 0.008);
-      this.puffs.explode(14, this.dude.x, this.dude.y);
-      this.dude.setAngularVelocity(Phaser.Math.Between(0, 1) ? 300 : -300);
-      this.dude.setVelocityY(Math.min(this.dude.body.velocity.y, 200));
-    }
-
-    this.time.delayedCall(splat ? 850 : 650, () => {
-      this.canRestart = true;
-      this.showGameOver(metres, money, isBest);
-    });
+    this.dude.y = t.down ? girder.body.top - 6 : girder.body.bottom + 6;
+    this.dude.setAngularVelocity(0).setRotation(0);
+    this.dude.setVelocity(0, 0).setAcceleration(0, 0);
+    this.dude.body.allowGravity = false;
+    this.hair.setVisible(false);
+    this.dude.setTexture('dude-fall');
+    if (this.reducedMotion) this.dude.setScale(0.74, 0.09);
+    else this.tweens.add({ targets: this.dude, scaleX: 0.74, scaleY: 0.09, duration: 140, ease: 'Back.in' });
+    if (!this.reducedMotion) this.cameras.main.shake(320, 0.02);
+    this.puffs.explode(24, this.dude.x, this.dude.y);
+    this.splatBurst(this.dude.x, this.dude.y);
+    this.gameOverSoon(850);
   }
 
   // Cartoon splat: a spread of comic blobs + a fat droplet spray that lingers
@@ -1026,8 +1050,9 @@ class PlayScene extends Phaser.Scene {
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
     }
 
-    // once the handoff is done, hold the dude at a fixed screen height
-    if (this.state === 'playing' && !this.handoff) {
+    // hold the dude at a fixed screen height in play, and keep watching him as
+    // he tumbles so we see him land
+    if ((this.state === 'playing' || this.state === 'tumbling') && !this.handoff) {
       this.cameras.main.scrollY = this.dude.y - H * CFG.holdFrac;
     }
 
