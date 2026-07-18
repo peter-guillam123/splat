@@ -71,7 +71,7 @@ const SKY_BANDS = [
 ];
 const BAND_PX = 7000;
 
-const FONT = '-apple-system, system-ui, "Segoe UI", Roboto, sans-serif';
+const FONT = '"Space Grotesk", -apple-system, system-ui, sans-serif';
 
 class PlayScene extends Phaser.Scene {
   constructor() { super('play'); }
@@ -301,51 +301,60 @@ class PlayScene extends Phaser.Scene {
 
     this.juiceBar = ui(this.add.graphics());
 
-    // cash is the headline; depth is the quiet driver beneath it
-    this.cashText = ui(this.add.text(W - 24, 14, '$0', {
-      fontFamily: FONT, fontSize: '46px', fontStyle: '800', color: '#ffe08a',
-    }).setOrigin(1, 0).setShadow(0, 2, 'rgba(0,0,0,0.3)', 5));
+    // live HUD is just the money — everything else waits for game over
+    this.cashText = ui(this.add.text(W - 26, 22, '$0', {
+      fontFamily: FONT, fontSize: '52px', fontStyle: '700', color: '#ffd34d',
+    }).setOrigin(1, 0).setLetterSpacing(1).setShadow(0, 2, 'rgba(0,0,0,0.35)', 6));
 
-    this.depthText = ui(this.add.text(W - 24, 68, '0 m', {
-      fontFamily: FONT, fontSize: '22px', fontStyle: '600', color: '#ffffff',
-    }).setOrigin(1, 0).setAlpha(0.85).setShadow(0, 1, 'rgba(0,0,0,0.25)', 3));
-
-    this.bestText = ui(this.add.text(W - 24, 98, this.bestCash ? `best $${this.bestCash.toLocaleString('en-US')}` : '', {
-      fontFamily: FONT, fontSize: '18px', fontStyle: '600', color: '#ffffff',
-    }).setOrigin(1, 0).setAlpha(0.65).setShadow(0, 1, 'rgba(0,0,0,0.25)', 3));
-
-    this.muteBtn = ui(this.add.text(24, 18, SFX.muted ? '\u{1F507}' : '\u{1F50A}', {
-      fontFamily: FONT, fontSize: '30px',
-    }).setOrigin(0, 0).setInteractive({ useHandCursor: true }));
-    this.muteBtn.input.hitArea.setSize(56, 56);
-    this.muteBtn.on('pointerdown', (p, x, y, event) => {
+    // custom mute glyph (no more emoji)
+    this.muteIcon = ui(this.add.graphics()).setPosition(38, 40);
+    this.drawMute();
+    this.muteHit = ui(this.add.zone(38, 40, 56, 56).setInteractive({ useHandCursor: true }));
+    this.muteHit.on('pointerdown', (p, x, y, event) => {
       SFX.ensure();
       SFX.setMuted(!SFX.muted);
-      this.muteBtn.setText(SFX.muted ? '\u{1F507}' : '\u{1F50A}');
+      this.drawMute();
       event.stopPropagation();
     });
 
     // ---- title overlay ----
     this.titleGroup = this.add.container(0, 0).setScrollFactor(0).setDepth(110);
-    const title = this.add.text(W / 2, H * 0.16, 'SPLAT!', {
-      fontFamily: FONT, fontSize: '128px', fontStyle: '800', color: '#ffffff',
-    }).setOrigin(0.5).setShadow(0, 5, 'rgba(0,0,0,0.28)', 12).setLetterSpacing(6);
-    const sub1 = this.add.text(W / 2, H * 0.16 + 72, 'catch the robber · dive to close the gap', {
-      fontFamily: FONT, fontSize: '30px', fontStyle: '600', color: '#ffffff',
-    }).setOrigin(0.5).setAlpha(0.95).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
-    const sub2 = this.add.text(W / 2, H * 0.16 + 110, 'hold to open your chute · let go to dive · steer to aim', {
-      fontFamily: FONT, fontSize: '24px', fontStyle: '500', color: '#ffffff',
-    }).setOrigin(0.5).setAlpha(0.8).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
+    const title = this.add.text(W / 2, H * 0.18, 'SPLAT!', {
+      fontFamily: FONT, fontSize: '132px', fontStyle: '700', color: '#ffffff',
+    }).setOrigin(0.5).setShadow(0, 4, 'rgba(0,0,0,0.28)', 14).setLetterSpacing(2);
+    const sub = this.add.text(W / 2, H * 0.18 + 92, 'catch the robber · hold to open your chute', {
+      fontFamily: FONT, fontSize: '26px', fontStyle: '500', color: '#ffffff',
+    }).setOrigin(0.5).setAlpha(0.9).setLetterSpacing(0.5).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
     const hint = this.add.text(W / 2, H * 0.72, 'tap to begin', {
-      fontFamily: FONT, fontSize: '28px', fontStyle: '700', color: '#ffffff',
-    }).setOrigin(0.5).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
-    this.titleGroup.add([title, sub1, sub2, hint]);
+      fontFamily: FONT, fontSize: '26px', fontStyle: '500', color: '#ffffff',
+    }).setOrigin(0.5).setLetterSpacing(3).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
+    this.titleGroup.add([title, sub, hint]);
     if (!this.reducedMotion) {
-      this.tweens.add({ targets: hint, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
-      this.tweens.add({ targets: title, y: '+=10', duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      this.tweens.add({ targets: hint, alpha: 0.35, duration: 750, yoyo: true, repeat: -1 });
+      this.tweens.add({ targets: title, y: '+=9', duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     }
 
     this.overGroup = null; // built on death
+  }
+
+  // A clean speaker glyph drawn by hand: waves when on, a small × when muted.
+  drawMute() {
+    const g = this.muteIcon;
+    g.clear();
+    const col = 0xffffff, a = 0.8;
+    g.fillStyle(col, a);
+    g.fillPoints([
+      { x: -11, y: -4 }, { x: -5, y: -4 }, { x: 1, y: -10 },
+      { x: 1, y: 10 }, { x: -5, y: 4 }, { x: -11, y: 4 },
+    ], true);
+    g.lineStyle(2.6, col, a);
+    if (!SFX.muted) {
+      g.beginPath(); g.arc(0, 0, 6.5, -0.85, 0.85); g.strokePath();
+      g.beginPath(); g.arc(0, 0, 11.5, -0.8, 0.8); g.strokePath();
+    } else {
+      g.lineBetween(6, -5, 14, 5);
+      g.lineBetween(14, -5, 6, 5);
+    }
   }
 
   buildInput() {
@@ -990,47 +999,45 @@ class PlayScene extends Phaser.Scene {
   }
 
   showGameOver(metres, money, isBest) {
+    const cy = H * 0.34;
     const g = this.add.container(0, 0).setScrollFactor(0).setDepth(120).setAlpha(0);
     const panel = this.add.graphics();
-    panel.fillStyle(0x1a2238, 0.82);
-    panel.fillRoundedRect(W / 2 - 260, H * 0.30, 520, 320, 28);
-    const t1 = this.add.text(W / 2, H * 0.30 + 66, 'splat.', {
-      fontFamily: FONT, fontSize: '60px', fontStyle: '800', color: '#ffffff',
-    }).setOrigin(0.5);
-    const t2 = this.add.text(W / 2, H * 0.30 + 138, `$${money.toLocaleString('en-US')} recovered`, {
-      fontFamily: FONT, fontSize: '36px', fontStyle: '700', color: '#ffe08a',
-    }).setOrigin(0.5);
-    const t3 = this.add.text(W / 2, H * 0.30 + 184, `${metres} m fallen`, {
+    panel.fillStyle(0x121826, 0.86);
+    panel.fillRoundedRect(W / 2 - 240, cy, 480, 268, 32);
+    // small caption, then the money huge, then one stat line, then the prompt
+    const cap = this.add.text(W / 2, cy + 48, 'splat', {
+      fontFamily: FONT, fontSize: '26px', fontStyle: '500', color: '#ffffff',
+    }).setOrigin(0.5).setAlpha(0.55).setLetterSpacing(4);
+    const big = this.add.text(W / 2, cy + 116, `$${money.toLocaleString('en-US')}`, {
+      fontFamily: FONT, fontSize: '76px', fontStyle: '700', color: '#ffd34d',
+    }).setOrigin(0.5).setLetterSpacing(1);
+    const stat = this.add.text(W / 2, cy + 176,
+      `${metres} m  ·  ${isBest ? 'new best' : 'best $' + this.bestCash.toLocaleString('en-US')}`, {
+        fontFamily: FONT, fontSize: '22px', fontStyle: '500',
+        color: isBest ? '#ffd34d' : '#ffffff',
+      }).setOrigin(0.5).setAlpha(isBest ? 0.95 : 0.6).setLetterSpacing(0.5);
+    const prompt = this.add.text(W / 2, cy + 226, 'tap to retry', {
       fontFamily: FONT, fontSize: '22px', fontStyle: '500', color: '#ffffff',
-    }).setOrigin(0.5).setAlpha(0.7);
-    const t4 = this.add.text(W / 2, H * 0.30 + 224,
-      isBest ? 'new best!' : `best $${this.bestCash.toLocaleString('en-US')}`, {
-        fontFamily: FONT, fontSize: '24px', fontStyle: '600',
-        color: isBest ? '#ffd166' : '#ffffff',
-      }).setOrigin(0.5).setAlpha(isBest ? 1 : 0.7);
-    const t5 = this.add.text(W / 2, H * 0.30 + 272, 'tap to go again', {
-      fontFamily: FONT, fontSize: '26px', fontStyle: '700', color: '#ffffff',
-    }).setOrigin(0.5).setAlpha(0.9);
-    g.add([panel, t1, t2, t3, t4, t5]);
+    }).setOrigin(0.5).setAlpha(0.85).setLetterSpacing(3);
+    g.add([panel, cap, big, stat, prompt]);
     this.tweens.add({ targets: g, alpha: 1, duration: 250 });
+    if (!this.reducedMotion) this.tweens.add({ targets: prompt, alpha: 0.35, duration: 750, yoyo: true, repeat: -1 });
     this.overGroup = g;
   }
 
   drawJuice() {
     const g = this.juiceBar;
     g.clear();
-    const bw = 320, bh = 18, bx = W / 2 - bw / 2, by = 24;
-    g.fillStyle(0x000000, 0.28);
-    g.fillRoundedRect(bx - 3, by - 3, bw + 6, bh + 6, 11);
+    const bw = 300, bh = 10, bx = W / 2 - bw / 2, by = 34;
+    g.fillStyle(0xffffff, 0.16); // subtle track
+    g.fillRoundedRect(bx, by, bw, bh, bh / 2);
     const frac = this.juice / CFG.juiceMax;
     const low = frac < 0.25;
     let alpha = 1;
-    if (this.juice <= 0.01) {
-      alpha = 0.5 + 0.5 * Math.sin(this.time.now / 90); // empty: flash
-    }
+    if (this.juice <= 0.01) alpha = 0.45 + 0.55 * Math.sin(this.time.now / 90); // empty: flash
     if (frac > 0.001) {
-      g.fillStyle(low ? 0xe8543f : 0xf2a03e, alpha);
-      g.fillRoundedRect(bx, by, Math.max(bw * frac, bh), bh, 9);
+      g.fillStyle(low ? 0xff5a3c : 0xffce54, alpha);
+      g.fillRoundedRect(bx, by, Math.max(bw * frac, bh), bh, bh / 2);
     }
   }
 
@@ -1051,7 +1058,6 @@ class PlayScene extends Phaser.Scene {
       this.updateSky(0); // pinned to the first sky band
       this.updateChevron();
       this.cashText.setText('$0');
-      this.depthText.setText('0 m');
       this.drawJuice();
       return;
     }
@@ -1124,7 +1130,6 @@ class PlayScene extends Phaser.Scene {
       this.updateGrenades(time);
       // money is earned, never given: only cash pickups and catching him pay
       this.cashText.setText('$' + Math.floor(this.cash).toLocaleString('en-US'));
-      this.depthText.setText(`${Math.max(0, Math.floor((this.dude.y - this.startY) * CFG.metresPerPx))} m`);
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
     }
 
@@ -1161,19 +1166,35 @@ class PlayScene extends Phaser.Scene {
   }
 }
 
-window.game = new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'game',
-  width: W,
-  height: H,
-  backgroundColor: '#6db3e8',
-  physics: {
-    default: 'arcade',
-    arcade: { gravity: { y: CFG.gravity } },
-  },
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  },
-  scene: PlayScene,
-});
+function boot() {
+  if (window.game) return;
+  window.game = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'game',
+    width: W,
+    height: H,
+    backgroundColor: '#6db3e8',
+    physics: {
+      default: 'arcade',
+      arcade: { gravity: { y: CFG.gravity } },
+    },
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    scene: PlayScene,
+  });
+}
+
+// Start once Space Grotesk is ready so every label uses it from the first
+// frame; fall back after a short wait (or if the Font API is missing).
+if (document.fonts && document.fonts.load) {
+  Promise.all([
+    document.fonts.load('700 1em "Space Grotesk"'),
+    document.fonts.load('500 1em "Space Grotesk"'),
+    document.fonts.load('400 1em "Space Grotesk"'),
+  ]).then(boot).catch(boot);
+  setTimeout(boot, 2000);
+} else {
+  boot();
+}
