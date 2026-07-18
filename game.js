@@ -43,7 +43,7 @@ const CFG = {
   // --- the robber chase ---
   robberVy: 560,         // his steady fall; freefall (900) closes, chute loses
   robberEscalate: 45,    // +vy each time you catch him
-  titleGap: 1520,        // how far below he starts, and the handoff lead-in
+  titleGap: 1700,        // how far below he starts, and the handoff lead-in
   catchDist: 62,         // gap (px) at which you reach him
   escapeGap: 1680,       // fresh lead he bolts to after a catch
   maxGap: 3400,          // he eases off past this so the chase stays winnable
@@ -53,7 +53,7 @@ const CFG = {
   cashBag: 350,          // $ per bag
   catchPayday: 1000,     // $ for catching him (grows with the chase level)
   depthTrickle: 0.02,    // $ per px fallen (you're on the case)
-  holdFrac: 0.62,        // where the dude is held on screen (fraction from top)
+  holdFrac: 0.36,        // where the dude is held on screen (fraction from top)
   titleFrac: 0.5,        // where the robber sits on the title
 };
 
@@ -469,7 +469,7 @@ class PlayScene extends Phaser.Scene {
 
   nearMiss() {
     this.juice = Math.min(CFG.juiceMax, this.juice + CFG.juiceNearMiss);
-    SFX.chime();
+    SFX.phew();
     if (!this.reducedMotion) this.cameras.main.shake(70, 0.0025);
     const t = this.add.text(this.dude.x, this.dude.y - 60, '+chute', {
       fontFamily: FONT, fontSize: '26px', fontStyle: '800', color: '#ffd166',
@@ -812,6 +812,7 @@ class PlayScene extends Phaser.Scene {
     if (metres > this.best) { this.best = metres; localStorage.setItem('splat.best', String(metres)); }
 
     SFX.wind(0);
+    SFX.screech();
     if (this.chuteOpen) this.closeChute(false);
     this.cameras.main.stopFollow();
 
@@ -1037,8 +1038,9 @@ class PlayScene extends Phaser.Scene {
     s.cur += s.v * dt;
     s.cur = Phaser.Math.Clamp(s.cur, 0.15, 1.5);
 
-    this.hair.x = this.dude.x - Math.sin(this.dude.rotation) * 38;
-    this.hair.y = this.dude.y - 38 * Math.cos(this.dude.rotation);
+    // plant the hair root on the crown (was 38, which floated it above the head)
+    this.hair.x = this.dude.x - Math.sin(this.dude.rotation) * 27;
+    this.hair.y = this.dude.y - 27 * Math.cos(this.dude.rotation);
     this.hair.setScale(0.5, 0.5 * s.cur);
     this.hair.rotation = this.dude.rotation
       - (this.dude.body ? this.dude.body.velocity.x : 0) / CFG.maxVxOpen * 0.3

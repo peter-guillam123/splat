@@ -146,6 +146,47 @@
       lfo.start(t); lfo.stop(t + 0.23);
     }
 
+    screech() { // a wobbly falling scream as you go
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const o = this.ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(900, t);
+      o.frequency.exponentialRampToValueAtTime(270, t + 0.42);
+      const lfo = this.ctx.createOscillator();
+      lfo.type = 'sine'; lfo.frequency.value = 14;
+      const lfoG = this.ctx.createGain(); lfoG.gain.value = 60;
+      lfo.connect(lfoG).connect(o.frequency);
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 4;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.03);
+      g.gain.setValueAtTime(0.15, t + 0.3);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      o.connect(bp).connect(g).connect(this.master);
+      o.start(t); o.stop(t + 0.52);
+      lfo.start(t); lfo.stop(t + 0.52);
+    }
+
+    phew() { // relieved exhale on a near-miss
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.Q.value = 2.6;
+      bp.frequency.setValueAtTime(700, t);
+      bp.frequency.linearRampToValueAtTime(1150, t + 0.09);
+      bp.frequency.linearRampToValueAtTime(480, t + 0.28);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.15, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      src.connect(bp).connect(g).connect(this.master);
+      src.start(t); src.stop(t + 0.34);
+    }
+
     chaching(big) { // cash pickup: a bright two-note register ding
       if (!this.ctx) return;
       const f = big ? 1046 : 880;
