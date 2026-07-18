@@ -85,10 +85,36 @@
       o.stop(t + dur + 0.05);
     }
 
-    snap() {   // canopy cracks open
+    floof() {  // canopy inflating: a soft airy "floof", not a crack
       if (!this.ctx) return;
-      this._noiseBurst(0.18, 0.28, 'highpass', 900);
-      this._tone('triangle', 110, 55, 0.16, 0.22);
+      const t = this.ctx.currentTime;
+      // breathy body: lowpassed noise with a gentle (non-percussive) attack
+      // and a filter swell up-then-settle, like fabric filling with air
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(280, t);
+      lp.frequency.linearRampToValueAtTime(950, t + 0.09);
+      lp.frequency.linearRampToValueAtTime(520, t + 0.38);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.16, t + 0.06); // soft swell in, no click
+      g.gain.exponentialRampToValueAtTime(0.05, t + 0.24);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.46);
+      src.connect(lp).connect(g).connect(this.master);
+      src.start(t); src.stop(t + 0.5);
+      // a gentle low "whumpf" underneath for the sense of it catching air
+      const o = this.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(150, t);
+      o.frequency.exponentialRampToValueAtTime(85, t + 0.3);
+      const og = this.ctx.createGain();
+      og.gain.setValueAtTime(0.0001, t);
+      og.gain.linearRampToValueAtTime(0.11, t + 0.05);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      o.connect(og).connect(this.master);
+      o.start(t); o.stop(t + 0.42);
     }
 
     close() {  // soft whump as it collapses

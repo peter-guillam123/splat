@@ -483,7 +483,7 @@ class PlayScene extends Phaser.Scene {
       this.tweens.add({ targets: this.dude, scaleY: 0.44, scaleX: 0.55, duration: 90, yoyo: true });
     }
     this.puffs.explode(10, this.dude.x, this.dude.y - 90);
-    SFX.snap();
+    SFX.floof();
   }
 
   closeChute(ranDry) {
