@@ -107,6 +107,25 @@ class PlayScene extends Phaser.Scene {
       g.generateTexture('puff', 32, 32);
       g.destroy();
     }
+    if (!this.textures.exists('splat-blob')) {
+      // a comic splat: clustered blobs with a darker rim and a sheen
+      const g = this.make.graphics({ add: false });
+      const blobs = [[64, 64, 32], [43, 53, 17], [87, 57, 19], [55, 85, 15],
+        [79, 83, 13], [25, 39, 8], [101, 35, 7], [109, 75, 6], [19, 79, 7], [71, 23, 7]];
+      g.fillStyle(0xb01530, 1); blobs.forEach(([x, y, r]) => g.fillCircle(x, y, r));
+      g.fillStyle(0xe0243a, 1); blobs.forEach(([x, y, r]) => g.fillCircle(x, y, Math.max(1, r - 3)));
+      g.fillStyle(0xff5a70, 0.5); g.fillCircle(56, 54, 10);
+      g.generateTexture('splat-blob', 128, 128);
+      g.destroy();
+    }
+    if (!this.textures.exists('drop')) {
+      const g = this.make.graphics({ add: false });
+      g.fillStyle(0xb01530, 1); g.fillCircle(8, 8, 7);
+      g.fillStyle(0xe0243a, 1); g.fillCircle(8, 8, 5);
+      g.fillStyle(0xff5a70, 0.6); g.fillCircle(6, 6, 2);
+      g.generateTexture('drop', 16, 16);
+      g.destroy();
+    }
     if (!this.textures.exists('glow')) {
       // vertical gradient, transparent top → solid bottom, tinted at runtime
       const c = this.textures.createCanvas('glow', 16, 256);
@@ -485,6 +504,7 @@ class PlayScene extends Phaser.Scene {
       this.dude.body.allowGravity = false;
       if (this.reducedMotion) this.dude.setScale(0.74, 0.09);
       else this.tweens.add({ targets: this.dude, scaleX: 0.74, scaleY: 0.09, duration: 140, ease: 'Back.in' });
+      this.splatBurst(this.dude.x, this.dude.y);
     } else {
       // glancing hit: tumble off the edge and keep falling
       if (!this.reducedMotion) this.cameras.main.shake(200, 0.008);
@@ -497,6 +517,29 @@ class PlayScene extends Phaser.Scene {
       this.canRestart = true;
       this.showGameOver(metres, isBest);
     });
+  }
+
+  // Cartoon splat: a comic blob under the pancake + a spray of droplets.
+  // Deliberately non-realistic (bright, rounded, sheen) — tune or recolour freely.
+  splatBurst(x, y) {
+    const blob = this.add.image(x, y + 6, 'splat-blob').setDepth(9)
+      .setAngle(Phaser.Math.Between(0, 359)).setAlpha(0.96);
+    if (this.reducedMotion) {
+      blob.setScale(0.55);
+    } else {
+      blob.setScale(0.12);
+      this.tweens.add({ targets: blob, scale: 0.58, duration: 170, ease: 'Back.out' });
+    }
+    this.tweens.add({ targets: blob, alpha: 0, delay: 900, duration: 600, onComplete: () => blob.destroy() });
+
+    if (this.reducedMotion) return;
+    const drops = this.add.particles(x, y, 'drop', {
+      speed: { min: 90, max: 280 }, angle: { min: 200, max: 340 },
+      gravityY: 1200, lifespan: 750, scale: { start: 1, end: 0.5 },
+      alpha: { start: 1, end: 0 }, rotate: { min: 0, max: 360 }, emitting: false,
+    }).setDepth(11);
+    drops.explode(14);
+    this.time.delayedCall(950, () => drops.destroy());
   }
 
   showGameOver(metres, isBest) {
