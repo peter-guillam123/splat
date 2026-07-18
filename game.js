@@ -108,13 +108,16 @@ class PlayScene extends Phaser.Scene {
       g.destroy();
     }
     if (!this.textures.exists('splat-blob')) {
-      // a comic splat: clustered blobs with a darker rim and a sheen
+      // a comic splat: a messy central mass with drips flung out around it
       const g = this.make.graphics({ add: false });
-      const blobs = [[64, 64, 32], [43, 53, 17], [87, 57, 19], [55, 85, 15],
-        [79, 83, 13], [25, 39, 8], [101, 35, 7], [109, 75, 6], [19, 79, 7], [71, 23, 7]];
-      g.fillStyle(0xb01530, 1); blobs.forEach(([x, y, r]) => g.fillCircle(x, y, r));
-      g.fillStyle(0xe0243a, 1); blobs.forEach(([x, y, r]) => g.fillCircle(x, y, Math.max(1, r - 3)));
-      g.fillStyle(0xff5a70, 0.5); g.fillCircle(56, 54, 10);
+      const blobs = [[64, 66, 33], [42, 54, 19], [88, 58, 20], [54, 88, 17],
+        [82, 86, 14], [70, 40, 15], [40, 78, 13],
+        // flung satellite drips
+        [22, 38, 9], [104, 34, 8], [112, 74, 7], [16, 80, 8], [70, 20, 7],
+        [30, 100, 6], [98, 100, 6], [120, 52, 5], [10, 56, 5], [58, 116, 5]];
+      g.fillStyle(0x9e1327, 1); blobs.forEach(([x, y, r]) => g.fillCircle(x, y, r + 1));
+      g.fillStyle(0xe0243a, 1); blobs.forEach(([x, y, r]) => g.fillCircle(x, y, Math.max(1, r - 2)));
+      g.fillStyle(0xff5a70, 0.5); g.fillCircle(55, 55, 12); g.fillCircle(84, 60, 6);
       g.generateTexture('splat-blob', 128, 128);
       g.destroy();
     }
@@ -501,7 +504,7 @@ class PlayScene extends Phaser.Scene {
 
     if (splat) {
       // direct hit: pancake onto the surface and stick
-      if (!this.reducedMotion) this.cameras.main.shake(240, 0.013);
+      if (!this.reducedMotion) this.cameras.main.shake(320, 0.02);
       this.puffs.explode(24, this.dude.x, this.dude.y);
       this.hair.setVisible(false);
       this.dude.setTexture('dude-fall');
@@ -519,33 +522,42 @@ class PlayScene extends Phaser.Scene {
       this.dude.setVelocityY(Math.min(this.dude.body.velocity.y, 200));
     }
 
-    this.time.delayedCall(650, () => {
+    this.time.delayedCall(splat ? 850 : 650, () => {
       this.canRestart = true;
       this.showGameOver(metres, isBest);
     });
   }
 
-  // Cartoon splat: a comic blob under the pancake + a spray of droplets.
-  // Deliberately non-realistic (bright, rounded, sheen) — tune or recolour freely.
+  // Cartoon splat: a spread of comic blobs + a fat droplet spray that lingers
+  // as a stain. Deliberately non-realistic (bright, rounded, sheen). The whole
+  // look lives here — recolour or dial the counts to taste.
   splatBurst(x, y) {
-    const blob = this.add.image(x, y + 6, 'splat-blob').setDepth(9)
-      .setAngle(Phaser.Math.Between(0, 359)).setAlpha(0.96);
-    if (this.reducedMotion) {
-      blob.setScale(0.55);
-    } else {
-      blob.setScale(0.12);
-      this.tweens.add({ targets: blob, scale: 0.58, duration: 170, ease: 'Back.out' });
+    const n = this.reducedMotion ? 4 : 9;
+    for (let i = 0; i < n; i++) {
+      const ox = Phaser.Math.Between(-95, 95);
+      const oy = Phaser.Math.Between(-18, 32);
+      const s = Phaser.Math.FloatBetween(0.28, 0.9);
+      const blob = this.add.image(x + ox, y + oy, 'splat-blob').setDepth(9)
+        .setAngle(Phaser.Math.Between(0, 359)).setAlpha(0.97);
+      if (this.reducedMotion) {
+        blob.setScale(s);
+      } else {
+        blob.setScale(s * 0.1);
+        this.tweens.add({ targets: blob, scaleX: s, scaleY: s, duration: Phaser.Math.Between(130, 260), ease: 'Back.out' });
+      }
+      // sits as a stain, then fades slowly
+      this.tweens.add({ targets: blob, alpha: 0, delay: 1800, duration: 900, onComplete: () => blob.destroy() });
     }
-    this.tweens.add({ targets: blob, alpha: 0, delay: 900, duration: 600, onComplete: () => blob.destroy() });
 
     if (this.reducedMotion) return;
-    const drops = this.add.particles(x, y, 'drop', {
-      speed: { min: 90, max: 280 }, angle: { min: 200, max: 340 },
-      gravityY: 1200, lifespan: 750, scale: { start: 1, end: 0.5 },
-      alpha: { start: 1, end: 0 }, rotate: { min: 0, max: 360 }, emitting: false,
+    const drops = this.add.particles(x, y - 4, 'drop', {
+      speed: { min: 140, max: 520 }, angle: { min: 185, max: 355 },
+      gravityY: 1500, lifespan: { min: 650, max: 1200 },
+      scale: { start: 1.7, end: 0.35 }, alpha: { start: 1, end: 0 },
+      rotate: { min: 0, max: 360 }, emitting: false,
     }).setDepth(11);
-    drops.explode(14);
-    this.time.delayedCall(950, () => drops.destroy());
+    drops.explode(46);
+    this.time.delayedCall(1400, () => drops.destroy());
   }
 
   showGameOver(metres, isBest) {
