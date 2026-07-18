@@ -1,63 +1,62 @@
 <svg viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg">
-  <!-- Freefall pose: front view, limbs flailing. Light from top-left. -->
-  <!-- far arm (right side of screen, slightly lower = broken symmetry) -->
+  <!-- Belly-flat skydiver freefall pose, seen from above: head & face to the
+       viewer, limbs splayed in the box position, torso foreshortened and
+       mostly tucked behind the head. Light from top-left. -->
+
+  <!-- FAR (screen-right) limbs: drawn first, a touch darker/back -->
   <g stroke-linecap="round" fill="none">
-    <path d="M62 68 Q74 54 82 34" stroke="#d15a1e" stroke-width="10"/>
-    <path d="M61 66 Q72 53 80 34" stroke="#f2762e" stroke-width="9"/>
-    <!-- near arm, higher and wider -->
-    <path d="M34 68 Q22 52 13 38" stroke="#d15a1e" stroke-width="10"/>
-    <path d="M35 66 Q24 52 15 37" stroke="#f2762e" stroke-width="9"/>
-    <!-- highlight on lit (left) arm -->
-    <path d="M32 62 Q25 53 19 44" stroke="#ff9a52" stroke-width="3" opacity="0.8"/>
+    <path d="M61 58 Q75 55 81 39" stroke="#c9541b" stroke-width="10"/>
+    <path d="M61 58 Q74 55 80 40" stroke="#e56b28" stroke-width="8.5"/>
+    <path d="M55 86 Q67 101 73 116" stroke="#c9541b" stroke-width="12"/>
+    <path d="M55 86 Q66 101 72 115" stroke="#e56b28" stroke-width="10.5"/>
   </g>
-  <!-- gloves -->
-  <circle cx="13" cy="36" r="6.5" fill="#6b4a32"/>
-  <circle cx="11.5" cy="34.5" r="2" fill="#8a6547" opacity="0.9"/>
-  <circle cx="81" cy="32" r="6.5" fill="#5c3f2b"/>
-  <!-- legs: bent out, different angles -->
+  <circle cx="81" cy="38" r="6" fill="#5c3f2b"/>
+  <ellipse cx="73" cy="117" rx="7" ry="6" fill="#5c3f2b"/>
+
+  <!-- NEAR (screen-left) limbs: brighter, lit edge -->
   <g stroke-linecap="round" fill="none">
-    <path d="M55 94 Q64 104 68 116" stroke="#d15a1e" stroke-width="11"/>
-    <path d="M55 93 Q63 103 67 115" stroke="#f2762e" stroke-width="10"/>
-    <path d="M41 94 Q33 106 30 114" stroke="#d15a1e" stroke-width="11"/>
-    <path d="M41 93 Q34 105 31 113" stroke="#f2762e" stroke-width="10"/>
-    <path d="M38 96 Q33 103 31 109" stroke="#ff9a52" stroke-width="3" opacity="0.7"/>
+    <path d="M35 58 Q21 54 17 35" stroke="#d15a1e" stroke-width="10.5"/>
+    <path d="M35 58 Q22 54 18 36" stroke="#f2762e" stroke-width="9"/>
+    <path d="M30 53 Q23 49 20 39" stroke="#ff9a52" stroke-width="3" opacity="0.8"/>
+    <path d="M41 86 Q29 101 25 115" stroke="#d15a1e" stroke-width="12.5"/>
+    <path d="M41 86 Q30 101 26 114" stroke="#f2762e" stroke-width="11"/>
+    <path d="M36 93 Q30 101 27 109" stroke="#ff9a52" stroke-width="3" opacity="0.7"/>
   </g>
-  <!-- boots -->
-  <ellipse cx="29" cy="118" rx="8" ry="6.5" fill="#6b4a32"/>
-  <ellipse cx="26.5" cy="116" rx="2.5" ry="2" fill="#8a6547" opacity="0.9"/>
-  <ellipse cx="69" cy="119" rx="8" ry="6.5" fill="#5c3f2b"/>
-  <!-- torso: chunky jumpsuit -->
-  <path d="M33 66 Q30 62 34 60 L62 60 Q66 62 63 66 L64 90 Q64 98 48 98 Q32 98 32 90 Z" fill="#f2762e"/>
-  <!-- torso shadow side (right) -->
-  <path d="M56 60 L62 60 Q66 62 63 66 L64 90 Q64 97 52 98 Q60 95 59 88 Z" fill="#d15a1e"/>
-  <!-- torso lit edge -->
-  <path d="M35 63 Q34 74 34.5 86" stroke="#ff9a52" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
-  <!-- chest strap + buckle (harness for the chute) -->
-  <path d="M33 72 L64 70" stroke="#6b4a32" stroke-width="5"/>
-  <rect x="44" y="67.5" width="8" height="7" rx="1.5" fill="#f4d03f"/>
-  <rect x="45" y="68.5" width="3" height="2" rx="1" fill="#fff3c2"/>
-  <!-- AO where head sits on torso -->
-  <ellipse cx="48" cy="62" rx="15" ry="4" fill="#000" opacity="0.15"/>
-  <!-- head: big and round -->
-  <circle cx="48" cy="42" r="22" fill="#e8a06c"/>
-  <!-- head shadow (right/under) -->
-  <path d="M60 24 A22 22 0 0 1 60 60 Q68 52 68 42 Q68 32 60 24" fill="#d18754"/>
-  <path d="M30 52 A22 22 0 0 0 66 52 Q58 62 48 62 Q38 62 30 52" fill="#d18754" opacity="0.55"/>
-  <!-- head lit sheen -->
-  <path d="M32 32 Q36 24 44 22" stroke="#f7b98a" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.9"/>
-  <!-- goggles: strap, gold rims, dark lenses -->
-  <path d="M26 38 L70 36" stroke="#6b4a32" stroke-width="7"/>
-  <circle cx="39" cy="38" r="9.5" fill="#f4d03f"/>
-  <circle cx="58" cy="37" r="9.5" fill="#e0b52f"/>
-  <circle cx="39" cy="38" r="7" fill="#3a3d4d"/>
-  <circle cx="58" cy="37" r="7" fill="#3a3d4d"/>
-  <!-- lens highlights: both catch light from top-left, off-centre -->
-  <circle cx="36.5" cy="35.5" r="2.4" fill="#ffffff" opacity="0.85"/>
-  <circle cx="55.5" cy="34.5" r="1.8" fill="#ffffff" opacity="0.7"/>
-  <!-- nose + gleeful open mouth, slightly off-centre -->
-  <ellipse cx="49" cy="47" rx="3" ry="2.4" fill="#d18754"/>
-  <path d="M42 53 Q49 61 56 52 Q50 56 42 53" fill="#7a3b2e"/>
-  <ellipse cx="49" cy="54.5" rx="4" ry="2.2" fill="#a04a38"/>
-  <!-- blush on lit cheek -->
-  <ellipse cx="32" cy="46" rx="3.5" ry="2.5" fill="#e8806c" opacity="0.55"/>
+  <circle cx="17" cy="34" r="6.5" fill="#6b4a32"/>
+  <circle cx="15" cy="32" r="2" fill="#8a6547" opacity="0.9"/>
+  <ellipse cx="25" cy="116" rx="7.5" ry="6.5" fill="#6b4a32"/>
+  <ellipse cx="22.5" cy="114" rx="2.3" ry="1.8" fill="#8a6547" opacity="0.9"/>
+
+  <!-- TORSO: short, foreshortened jumpsuit, largely hidden under the head -->
+  <path d="M34 56 Q33 54 37 54 L59 54 Q63 54 62 56 L58 84 Q56 90 48 90 Q40 90 38 84 Z" fill="#f2762e"/>
+  <path d="M53 54 L59 54 Q63 54 62 56 L58 84 Q56 89 50 90 Q56 86 55 80 Z" fill="#d15a1e"/>
+  <path d="M38 57 Q37 71 39 82" stroke="#ff9a52" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <!-- harness straps + buckle -->
+  <path d="M40 58 L44 86" stroke="#6b4a32" stroke-width="4"/>
+  <path d="M56 58 L52 86" stroke="#6b4a32" stroke-width="4"/>
+  <rect x="43" y="65" width="10" height="8" rx="1.5" fill="#f4d03f"/>
+  <rect x="44.2" y="66.2" width="3.4" height="2.2" rx="1" fill="#fff3c2"/>
+
+  <!-- AO where the head sits over the torso -->
+  <ellipse cx="48" cy="54" rx="16" ry="4.5" fill="#000" opacity="0.16"/>
+
+  <!-- HEAD: big, dominating, face up to the camera -->
+  <circle cx="48" cy="42" r="21" fill="#e8a06c"/>
+  <path d="M59 26 A21 21 0 0 1 59 58 Q66 50 66 42 Q66 34 59 26" fill="#d18754"/>
+  <path d="M31 51 A21 21 0 0 0 65 51 Q57 61 48 61 Q39 61 31 51" fill="#d18754" opacity="0.5"/>
+  <path d="M33 31 Q37 24 44 23" stroke="#f7b98a" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.9"/>
+  <!-- goggles -->
+  <path d="M27 38 L69 36" stroke="#6b4a32" stroke-width="6.5"/>
+  <circle cx="39" cy="38" r="8.5" fill="#f4d03f"/>
+  <circle cx="57" cy="37" r="8.5" fill="#e0b52f"/>
+  <circle cx="39" cy="38" r="6.2" fill="#3a3d4d"/>
+  <circle cx="57" cy="37" r="6.2" fill="#3a3d4d"/>
+  <circle cx="36.6" cy="35.6" r="2.1" fill="#ffffff" opacity="0.85"/>
+  <circle cx="54.8" cy="34.8" r="1.6" fill="#ffffff" opacity="0.7"/>
+  <!-- nose + big wind-blasted grin -->
+  <ellipse cx="49" cy="46" rx="2.7" ry="2.1" fill="#d18754"/>
+  <path d="M39 51 Q48 61 58 50 Q49 56 39 51" fill="#7a3b2e"/>
+  <ellipse cx="48.5" cy="52.5" rx="4.8" ry="2.5" fill="#a04a38"/>
+  <ellipse cx="30" cy="45" rx="3.6" ry="2.7" fill="#e8806c" opacity="0.5"/>
+  <ellipse cx="65" cy="44" rx="3" ry="2.3" fill="#e8806c" opacity="0.4"/>
 </svg>
