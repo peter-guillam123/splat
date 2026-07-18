@@ -113,6 +113,46 @@
       this._noiseBurst(0.3, 0.3, 'lowpass', 500);
       this._tone('sine', 130, 35, 0.42, 0.3);
     }
+
+    squelch() { // wet splat: filtered-noise "sshlp" + gloopy pitch-drop + thud
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+
+      // wet body: bandpass noise sweeping up then down
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.Q.value = 1.2;
+      bp.frequency.setValueAtTime(300, t);
+      bp.frequency.exponentialRampToValueAtTime(1600, t + 0.05);
+      bp.frequency.exponentialRampToValueAtTime(180, t + 0.28);
+      const ng = this.ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t);
+      ng.gain.exponentialRampToValueAtTime(0.5, t + 0.015);
+      ng.gain.exponentialRampToValueAtTime(0.02, t + 0.16);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      src.connect(bp).connect(ng).connect(this.master);
+      src.start(t); src.stop(t + 0.34);
+
+      // gloopy pitch drop with vibrato = the wet inner "body"
+      const o = this.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(300, t);
+      o.frequency.exponentialRampToValueAtTime(60, t + 0.22);
+      const og = this.ctx.createGain();
+      og.gain.setValueAtTime(0.26, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+      const lfo = this.ctx.createOscillator();
+      lfo.type = 'sine'; lfo.frequency.value = 22;
+      const lfoG = this.ctx.createGain(); lfoG.gain.value = 40;
+      lfo.connect(lfoG).connect(o.frequency);
+      o.connect(og).connect(this.master);
+      o.start(t); o.stop(t + 0.24);
+      lfo.start(t); lfo.stop(t + 0.24);
+
+      // low thud underneath for impact weight
+      this._tone('sine', 120, 40, 0.2, 0.3);
+    }
   }
 
   window.SFX = new SFX();

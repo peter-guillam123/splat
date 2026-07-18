@@ -497,13 +497,13 @@ class PlayScene extends Phaser.Scene {
       localStorage.setItem('splat.best', String(metres));
     }
 
-    SFX.crash();
     SFX.wind(0);
     if (this.chuteOpen) this.closeChute(false);
     this.cameras.main.stopFollow();
 
     if (splat) {
       // direct hit: pancake onto the surface and stick
+      SFX.squelch();
       if (!this.reducedMotion) this.cameras.main.shake(320, 0.02);
       this.puffs.explode(24, this.dude.x, this.dude.y);
       this.hair.setVisible(false);
@@ -516,6 +516,7 @@ class PlayScene extends Phaser.Scene {
       this.splatBurst(this.dude.x, this.dude.y);
     } else {
       // glancing hit: tumble off the edge and keep falling
+      SFX.crash();
       if (!this.reducedMotion) this.cameras.main.shake(200, 0.008);
       this.puffs.explode(14, this.dude.x, this.dude.y);
       this.dude.setAngularVelocity(Phaser.Math.Between(0, 1) ? 300 : -300);
