@@ -1,0 +1,15 @@
+<svg viewBox="0 0 44 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- a fat money sack, worth a lot -->
+  <path d="M8 24 Q6 45 22 46.5 Q38 45 36 24 Q34 15 22 15 Q10 15 8 24 Z" fill="#c9a86a"/>
+  <path d="M23 15 Q34 15 36 24 Q38 42 25 46 Q34 39 32 25 Q30 17 22 17 Z" fill="#a8894f"/>
+  <ellipse cx="19" cy="26" rx="7" ry="9" fill="#d8bb83" opacity="0.5"/>
+  <!-- tied neck -->
+  <path d="M13 15 Q22 8 31 15 Q28 19 22 19 Q16 19 13 15 Z" fill="#8f7440"/>
+  <ellipse cx="22" cy="14" rx="9.5" ry="3.6" fill="#a8894f"/>
+  <path d="M12.5 12.5 Q22 6 31.5 12.5" stroke="#6f5a31" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  <!-- $ badge -->
+  <circle cx="22" cy="31" r="8.5" fill="#f2e6c6"/>
+  <circle cx="22" cy="31" r="8.5" fill="none" stroke="#c9a86a" stroke-width="1"/>
+  <path d="M22 25 L22 37" stroke="#96652f" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M26 27 Q18 26 18.6 30 Q19.2 33 25 33 Q28 33.4 27 36 Q26 38 19.5 37" stroke="#96652f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+</svg>

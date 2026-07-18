@@ -1,0 +1,59 @@
+<svg viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- The bank robber, belly-down freefall (same camera as the dude): black
+       balaclava with an eye-slit, dark clothes, a swag bag clutched to his
+       front. Limbs splayed like the dude's freefall. Light from top-left. -->
+
+  <!-- LEGS behind, boots peeking -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M53 72 Q68 62 76 53" stroke="#22252c" stroke-width="11"/>
+    <path d="M53 72 Q67 62 75 54" stroke="#343a45" stroke-width="9.5"/>
+    <path d="M43 72 Q27 62 20 52" stroke="#262a32" stroke-width="11.5"/>
+    <path d="M43 72 Q28 62 21 53" stroke="#3d434f" stroke-width="10"/>
+  </g>
+  <ellipse cx="77" cy="52" rx="7" ry="6" fill="#141519" transform="rotate(-40 77 52)"/>
+  <ellipse cx="19" cy="51" rx="7.5" ry="6.5" fill="#1c1f26" transform="rotate(40 19 51)"/>
+  <ellipse cx="17" cy="48.5" rx="2.2" ry="1.7" fill="#363b45" opacity="0.9" transform="rotate(40 17 48.5)"/>
+
+  <!-- dark torso, then the swag bag over the belly -->
+  <path d="M40 66 Q39 64 43 64 L55 64 Q59 64 58 66 Q59 80 48 81 Q37 80 40 66 Z" fill="#343a45"/>
+  <path d="M52 64 L55 64 Q59 64 58 66 Q59 79 49 81 Q54 78 53 70 Z" fill="#22252c"/>
+  <!-- swag bag -->
+  <path d="M39 71 Q39 62 48 62 Q57 62 57 71 Q59 83 48 84 Q37 83 39 71 Z" fill="#c9a86a"/>
+  <path d="M52 62 Q57 63 57 71 Q59 82 49 84 Q54 80 53 71 Q53 64 52 62 Z" fill="#a8894f"/>
+  <ellipse cx="48" cy="63.5" rx="8" ry="3" fill="#8f7440"/>
+  <path d="M40 63 Q48 58 56 63" stroke="#6f5a31" stroke-width="2.4" fill="none"/>
+  <!-- $ on the bag -->
+  <path d="M48 69 L48 79" stroke="#3c6b3f" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M51 71 Q44 70.4 44.6 73.2 Q45.2 75.4 49.6 75.4 Q52 75.8 51 78 Q50 79.6 45 78.8" stroke="#3c6b3f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+
+  <!-- ARMS over the legs -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M57 62 Q72 52 82 37" stroke="#22252c" stroke-width="10"/>
+    <path d="M57 62 Q71 52 81 38" stroke="#343a45" stroke-width="8.5"/>
+    <path d="M39 62 Q23 51 14 34" stroke="#262a32" stroke-width="10.5"/>
+    <path d="M39 62 Q24 51 15 35" stroke="#3d434f" stroke-width="9"/>
+    <path d="M34 56 Q26 48 19 38" stroke="#525863" stroke-width="3" opacity="0.7"/>
+  </g>
+  <circle cx="82" cy="36" r="6" fill="#141519"/>
+  <circle cx="14" cy="33" r="6.5" fill="#1c1f26"/>
+  <circle cx="12" cy="31" r="2" fill="#363b45" opacity="0.9"/>
+
+  <!-- AO under head -->
+  <ellipse cx="48" cy="64" rx="16" ry="4.5" fill="#000" opacity="0.18"/>
+
+  <!-- HEAD: balaclava -->
+  <circle cx="48" cy="52" r="20" fill="#26292f"/>
+  <path d="M58 37 A20 20 0 0 1 58 67 Q65 60 65 52 Q65 44 58 37" fill="#181a1f"/>
+  <path d="M33 42 Q37 35 44 34" stroke="#3f444e" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.85"/>
+  <!-- eye slit: skin band -->
+  <path d="M31 50 Q48 45 65 49 Q63 56 48 56 Q34 56 31 50 Z" fill="#e8a06c"/>
+  <path d="M31 50 Q48 46 65 49 Q58 48 48 48 Q38 48 31 50 Z" fill="#d18754" opacity="0.6"/>
+  <!-- mean brows -->
+  <path d="M34 48 Q40 46.5 45 48.5" stroke="#1a1c21" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <path d="M52 48.5 Q57 46.5 63 48.5" stroke="#1a1c21" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <!-- eyes -->
+  <circle cx="40" cy="52" r="3" fill="#20222a"/>
+  <circle cx="56" cy="52" r="3" fill="#20222a"/>
+  <circle cx="39" cy="51" r="1" fill="#ffffff" opacity="0.85"/>
+  <circle cx="55" cy="51" r="1" fill="#ffffff" opacity="0.7"/>
+</svg>
