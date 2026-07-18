@@ -1072,9 +1072,10 @@ class PlayScene extends Phaser.Scene {
     s.cur += s.v * dt;
     s.cur = Phaser.Math.Clamp(s.cur, 0.15, 1.5);
 
-    // plant the hair root on the crown (was 38, which floated it above the head)
-    this.hair.x = this.dude.x - Math.sin(this.dude.rotation) * 27;
-    this.hair.y = this.dude.y - 27 * Math.cos(this.dude.rotation);
+    // root sits at the middle of the head, so the head (drawn in front) hides
+    // its base and the hair reads as streaming from behind the skull
+    this.hair.x = this.dude.x - Math.sin(this.dude.rotation) * 14;
+    this.hair.y = this.dude.y - 14 * Math.cos(this.dude.rotation);
     this.hair.setScale(0.5, 0.5 * s.cur);
     this.hair.rotation = this.dude.rotation
       - (this.dude.body ? this.dude.body.velocity.x : 0) / CFG.maxVxOpen * 0.3
