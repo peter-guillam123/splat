@@ -388,7 +388,7 @@ class PlayScene extends Phaser.Scene {
   // for the flat skydiver. Covers head+torso, forgiving at the splayed limbs.
   poseBody(open) {
     if (open) this.dude.body.setSize(56, 150).setOffset(68, 50);
-    else this.dude.body.setSize(64, 124).setOffset(64, 48);
+    else this.dude.body.setSize(64, 100).setOffset(64, 66); // compact belly-down mass
   }
 
   deploy() {

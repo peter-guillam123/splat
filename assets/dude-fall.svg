@@ -1,62 +1,62 @@
 <svg viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg">
-  <!-- Belly-flat skydiver freefall pose, seen from above: head & face to the
-       viewer, limbs splayed in the box position, torso foreshortened and
-       mostly tucked behind the head. Light from top-left. -->
+  <!-- Belly-down freefall, SAME side-on camera as the hang pose: the torso is
+       edge-on and nearly gone, arms spread up-and-out, legs kicked up to mirror
+       them and tucked just behind the arms (boots peek below the hands), head
+       craned up to face us. The chute "stands him up" into dude-hang. Light TL. -->
 
-  <!-- FAR (screen-right) limbs: drawn first, a touch darker/back -->
+  <!-- LEGS first, behind the arms: boots peek out below/inside the hands -->
   <g stroke-linecap="round" fill="none">
-    <path d="M61 58 Q75 55 81 39" stroke="#c9541b" stroke-width="10"/>
-    <path d="M61 58 Q74 55 80 40" stroke="#e56b28" stroke-width="8.5"/>
-    <path d="M55 86 Q67 101 73 116" stroke="#c9541b" stroke-width="12"/>
-    <path d="M55 86 Q66 101 72 115" stroke="#e56b28" stroke-width="10.5"/>
+    <!-- far (right) leg -->
+    <path d="M53 72 Q68 62 76 53" stroke="#b74a16" stroke-width="11"/>
+    <path d="M53 72 Q67 62 75 54" stroke="#cf5c21" stroke-width="9.5"/>
+    <!-- near (left) leg -->
+    <path d="M43 72 Q27 62 20 52" stroke="#c15218" stroke-width="11.5"/>
+    <path d="M43 72 Q28 62 21 53" stroke="#dd6425" stroke-width="10"/>
   </g>
-  <circle cx="81" cy="38" r="6" fill="#5c3f2b"/>
-  <ellipse cx="73" cy="117" rx="7" ry="6" fill="#5c3f2b"/>
+  <ellipse cx="77" cy="52" rx="7" ry="6" fill="#4f3626" transform="rotate(-40 77 52)"/>
+  <ellipse cx="19" cy="51" rx="7.5" ry="6.5" fill="#5c3f2b" transform="rotate(40 19 51)"/>
+  <ellipse cx="17" cy="48.5" rx="2.2" ry="1.7" fill="#7a5942" opacity="0.9" transform="rotate(40 17 48.5)"/>
 
-  <!-- NEAR (screen-left) limbs: brighter, lit edge -->
+  <!-- tiny rounded belly (the arch's low point) + harness, mostly under the head -->
+  <path d="M40 66 Q39 64 43 64 L55 64 Q59 64 58 66 Q59 80 48 81 Q37 80 40 66 Z" fill="#f2762e"/>
+  <path d="M52 64 L55 64 Q59 64 58 66 Q59 79 49 81 Q54 78 53 70 Z" fill="#d15a1e"/>
+  <rect x="43.5" y="71" width="9" height="7" rx="1.5" fill="#f4d03f"/>
+  <rect x="44.7" y="72.1" width="3.2" height="2" rx="1" fill="#fff3c2"/>
+
+  <!-- ARMS over the legs: spread up-and-out, hands to the top corners -->
   <g stroke-linecap="round" fill="none">
-    <path d="M35 58 Q21 54 17 35" stroke="#d15a1e" stroke-width="10.5"/>
-    <path d="M35 58 Q22 54 18 36" stroke="#f2762e" stroke-width="9"/>
-    <path d="M30 53 Q23 49 20 39" stroke="#ff9a52" stroke-width="3" opacity="0.8"/>
-    <path d="M41 86 Q29 101 25 115" stroke="#d15a1e" stroke-width="12.5"/>
-    <path d="M41 86 Q30 101 26 114" stroke="#f2762e" stroke-width="11"/>
-    <path d="M36 93 Q30 101 27 109" stroke="#ff9a52" stroke-width="3" opacity="0.7"/>
+    <!-- far (right) arm -->
+    <path d="M57 62 Q72 52 82 37" stroke="#c9541b" stroke-width="10"/>
+    <path d="M57 62 Q71 52 81 38" stroke="#e56b28" stroke-width="8.5"/>
+    <!-- near (left) arm -->
+    <path d="M39 62 Q23 51 14 34" stroke="#d15a1e" stroke-width="10.5"/>
+    <path d="M39 62 Q24 51 15 35" stroke="#f2762e" stroke-width="9"/>
+    <path d="M34 56 Q26 48 19 38" stroke="#ff9a52" stroke-width="3" opacity="0.8"/>
   </g>
-  <circle cx="17" cy="34" r="6.5" fill="#6b4a32"/>
-  <circle cx="15" cy="32" r="2" fill="#8a6547" opacity="0.9"/>
-  <ellipse cx="25" cy="116" rx="7.5" ry="6.5" fill="#6b4a32"/>
-  <ellipse cx="22.5" cy="114" rx="2.3" ry="1.8" fill="#8a6547" opacity="0.9"/>
+  <circle cx="82" cy="36" r="6" fill="#5c3f2b"/>
+  <circle cx="14" cy="33" r="6.5" fill="#6b4a32"/>
+  <circle cx="12" cy="31" r="2" fill="#8a6547" opacity="0.9"/>
 
-  <!-- TORSO: short, foreshortened jumpsuit, largely hidden under the head -->
-  <path d="M34 56 Q33 54 37 54 L59 54 Q63 54 62 56 L58 84 Q56 90 48 90 Q40 90 38 84 Z" fill="#f2762e"/>
-  <path d="M53 54 L59 54 Q63 54 62 56 L58 84 Q56 89 50 90 Q56 86 55 80 Z" fill="#d15a1e"/>
-  <path d="M38 57 Q37 71 39 82" stroke="#ff9a52" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
-  <!-- harness straps + buckle -->
-  <path d="M40 58 L44 86" stroke="#6b4a32" stroke-width="4"/>
-  <path d="M56 58 L52 86" stroke="#6b4a32" stroke-width="4"/>
-  <rect x="43" y="65" width="10" height="8" rx="1.5" fill="#f4d03f"/>
-  <rect x="44.2" y="66.2" width="3.4" height="2.2" rx="1" fill="#fff3c2"/>
+  <!-- AO where the head sits over the vanished body -->
+  <ellipse cx="48" cy="64" rx="16" ry="4.5" fill="#000" opacity="0.16"/>
 
-  <!-- AO where the head sits over the torso -->
-  <ellipse cx="48" cy="54" rx="16" ry="4.5" fill="#000" opacity="0.16"/>
-
-  <!-- HEAD: big, dominating, face up to the camera -->
-  <circle cx="48" cy="42" r="21" fill="#e8a06c"/>
-  <path d="M59 26 A21 21 0 0 1 59 58 Q66 50 66 42 Q66 34 59 26" fill="#d18754"/>
-  <path d="M31 51 A21 21 0 0 0 65 51 Q57 61 48 61 Q39 61 31 51" fill="#d18754" opacity="0.5"/>
-  <path d="M33 31 Q37 24 44 23" stroke="#f7b98a" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.9"/>
-  <!-- goggles -->
-  <path d="M27 38 L69 36" stroke="#6b4a32" stroke-width="6.5"/>
-  <circle cx="39" cy="38" r="8.5" fill="#f4d03f"/>
-  <circle cx="57" cy="37" r="8.5" fill="#e0b52f"/>
-  <circle cx="39" cy="38" r="6.2" fill="#3a3d4d"/>
-  <circle cx="57" cy="37" r="6.2" fill="#3a3d4d"/>
-  <circle cx="36.6" cy="35.6" r="2.1" fill="#ffffff" opacity="0.85"/>
-  <circle cx="54.8" cy="34.8" r="1.6" fill="#ffffff" opacity="0.7"/>
+  <!-- HEAD: craned up to face the camera -->
+  <circle cx="48" cy="52" r="20" fill="#e8a06c"/>
+  <path d="M58 37 A20 20 0 0 1 58 67 Q65 60 65 52 Q65 44 58 37" fill="#d18754"/>
+  <path d="M31 61 A20 20 0 0 0 65 61 Q57 70 48 70 Q39 70 31 61" fill="#d18754" opacity="0.5"/>
+  <path d="M33 42 Q37 35 44 34" stroke="#f7b98a" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.9"/>
+  <!-- goggles, set high (looking up at us) -->
+  <path d="M28 47 L68 45" stroke="#6b4a32" stroke-width="6.5"/>
+  <circle cx="40" cy="47" r="8.5" fill="#f4d03f"/>
+  <circle cx="57" cy="46" r="8.5" fill="#e0b52f"/>
+  <circle cx="40" cy="47" r="6.2" fill="#3a3d4d"/>
+  <circle cx="57" cy="46" r="6.2" fill="#3a3d4d"/>
+  <circle cx="37.6" cy="44.6" r="2.1" fill="#ffffff" opacity="0.85"/>
+  <circle cx="54.8" cy="43.8" r="1.6" fill="#ffffff" opacity="0.7"/>
   <!-- nose + big wind-blasted grin -->
-  <ellipse cx="49" cy="46" rx="2.7" ry="2.1" fill="#d18754"/>
-  <path d="M39 51 Q48 61 58 50 Q49 56 39 51" fill="#7a3b2e"/>
-  <ellipse cx="48.5" cy="52.5" rx="4.8" ry="2.5" fill="#a04a38"/>
-  <ellipse cx="30" cy="45" rx="3.6" ry="2.7" fill="#e8806c" opacity="0.5"/>
-  <ellipse cx="65" cy="44" rx="3" ry="2.3" fill="#e8806c" opacity="0.4"/>
+  <ellipse cx="49" cy="55" rx="2.7" ry="2.1" fill="#d18754"/>
+  <path d="M39 59 Q48 69 58 58 Q49 64 39 59" fill="#7a3b2e"/>
+  <ellipse cx="48.5" cy="60.5" rx="4.8" ry="2.5" fill="#a04a38"/>
+  <ellipse cx="31" cy="54" rx="3.6" ry="2.7" fill="#e8806c" opacity="0.5"/>
+  <ellipse cx="65" cy="53" rx="3" ry="2.3" fill="#e8806c" opacity="0.4"/>
 </svg>
