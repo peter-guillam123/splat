@@ -1,0 +1,21 @@
+<svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Small fast swift, facing left, wings up. Soft-flat, light from top-left. -->
+  <!-- forked tail -->
+  <path d="M54 30 L78 22 L69 31 L78 40 L54 34 Z" fill="#8f4a28"/>
+  <!-- body -->
+  <ellipse cx="42" cy="32" rx="21" ry="12.5" fill="#b5643a"/>
+  <path d="M24 36 Q42 45 60 35 Q42 41 24 36 Z" fill="#93502c"/>
+  <ellipse cx="40" cy="37" rx="13" ry="4.5" fill="#e8b98a" opacity="0.55"/>
+  <ellipse cx="37" cy="27" rx="13" ry="5" fill="#c9794f" opacity="0.7"/>
+  <!-- head -->
+  <circle cx="26" cy="29" r="11" fill="#b5643a"/>
+  <!-- beak -->
+  <path d="M17 27 L3 30 L17 33 Z" fill="#f2c23e"/>
+  <path d="M17 30.5 L3 30 L17 33 Z" fill="#d99e2a"/>
+  <!-- eye -->
+  <circle cx="22" cy="27" r="2.8" fill="#2a2016"/>
+  <circle cx="21" cy="26" r="0.9" fill="#ffffff" opacity="0.85"/>
+  <!-- swept wing, raised -->
+  <path d="M40 28 Q48 7 61 3 Q55 21 61 30 Q50 31 40 28 Z" fill="#8f4a28"/>
+  <path d="M43 27 Q50 12 58 8 Q54 21 58 28 Q50 29 43 27 Z" fill="#a85a34"/>
+</svg>
