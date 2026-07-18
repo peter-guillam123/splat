@@ -53,6 +53,8 @@ const CFG = {
   cashBag: 350,          // $ per bag
   catchPayday: 1000,     // $ for catching him (grows with the chase level)
   depthTrickle: 0.02,    // $ per px fallen (you're on the case)
+  holdFrac: 0.62,        // where the dude is held on screen (fraction from top)
+  titleFrac: 0.5,        // where the robber sits on the title
 };
 
 // Sky bands the fall cycles through: day → sunset → night → dawn → day…
@@ -143,10 +145,9 @@ class PlayScene extends Phaser.Scene {
 
     for (let i = 0; i < 5; i++) this.spawnCloud(true);
 
-    // The title watches the robber; the dude is a screen above, off-frame.
-    // The first tap hands the camera to the dude (see startRun).
-    this.cameras.main.startFollow(this.robber, false, 1, 0.12);
-    this.cameras.main.setFollowOffset(0, -H * 0.17);
+    // The camera is driven by hand (no springy follow): the title holds the
+    // robber; play holds the dude at a fixed screen height. See updateCamera.
+    this.cameras.main.scrollY = this.robber.y - H * CFG.titleFrac;
   }
 
   buildRobber() {
@@ -338,18 +339,18 @@ class PlayScene extends Phaser.Scene {
 
   startRun() {
     this.state = 'playing';
-    // score, sky cycle and obstacles all start from wherever he is right now
     this.startY = this.dude.y;
     this.prevDudeY = this.dude.y;
     this.prevGapC = this.dude.x;
-    this.nextRowY = this.dude.y + H * 0.95; // lead-in before the first girder
-    this.dude.body.allowGravity = true;     // he drops into the chase
-    // hand the camera from the robber up to the dude: with a low follow lerp it
-    // slides up to catch our incoming guy while the robber drops away below
-    this.cameras.main.startFollow(this.dude, false, 0.06, 0.06);
-    this.time.delayedCall(1200, () => {
-      if (this.state === 'playing') this.cameras.main.startFollow(this.dude, false, 1, 0.15);
-    });
+    this.dude.body.allowGravity = true; // he drops into the chase
+    // The handoff: the camera freezes here. The robber slides out the bottom
+    // and our guy falls in from the top; once he reaches his hold line the
+    // camera locks onto him and normal play begins (see the handoff block in
+    // update). No obstacles until then.
+    this.handoff = true;
+    this.handoffScroll = this.cameras.main.scrollY;
+    this.handoffStart = this.time.now;
+    this.nextRowY = Infinity; // set for real when the handoff completes
     this.tweens.add({ targets: this.titleGroup, alpha: 0, duration: 350, onComplete: () => this.titleGroup.setVisible(false) });
   }
 
@@ -531,7 +532,7 @@ class PlayScene extends Phaser.Scene {
       this.nextCashAt = time + Phaser.Math.Between(CFG.cashDropMs[0], CFG.cashDropMs[1]);
     }
 
-    if (this.state === 'playing' && !this.caught && gap <= CFG.catchDist) this.catchRobber();
+    if (this.state === 'playing' && !this.handoff && !this.caught && gap <= CFG.catchDist) this.catchRobber();
   }
 
   dropCash(x, y) {
@@ -919,14 +920,16 @@ class PlayScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
 
     if (this.state === 'ready') {
-      // title: the camera watches the robber fall and shed cash; our guy is
-      // pinned a screen above him, off-frame, waiting to give chase
+      // title: the camera holds the robber as he falls and sheds cash; our guy
+      // is pinned a screen above him, off-frame, waiting to give chase
       this.updateRobber(time, dt);
       this.updateCash(time);
       this.dude.y = this.robber.y - CFG.titleGap;
       this.dude.x = W / 2;
+      this.cameras.main.scrollY = this.robber.y - H * CFG.titleFrac;
       this.updateClouds();
       this.updateSky(0); // pinned to the first sky band
+      this.updateChevron();
       this.cashText.setText('$0');
       this.depthText.setText('0 m');
       this.drawJuice();
@@ -936,6 +939,18 @@ class PlayScene extends Phaser.Scene {
     const body = this.dude.body;
     const vy = body.velocity.y;
     const speed01 = Phaser.Math.Clamp(vy / CFG.terminalVy, 0, 1);
+
+    if (this.state === 'playing' && this.handoff) {
+      // camera frozen while the robber slides out the bottom and our guy falls
+      // in from the top; lock on once he reaches his hold line
+      this.cameras.main.scrollY = this.handoffScroll;
+      const reached = (this.dude.y - this.handoffScroll) >= H * CFG.holdFrac;
+      if (reached || time - this.handoffStart > 3500) {
+        this.handoff = false;
+        this.nextRowY = this.dude.y + H * 0.9; // a clear screen before the first girder
+        this.prevDudeY = this.dude.y;
+      }
+    }
 
     if (this.state === 'playing') {
       // --- steering ---
@@ -958,9 +973,9 @@ class PlayScene extends Phaser.Scene {
       if (this.dude.x < 40) { this.dude.x = 40; if (body.velocity.x < 0) body.setVelocityX(0); }
       if (this.dude.x > W - 40) { this.dude.x = W - 40; if (body.velocity.x > 0) body.setVelocityX(0); }
 
-      // --- chute ---
-      const holding = this.keys.SPACE.isDown || this.keys.W.isDown
-        || this.cursors.up.isDown || this.input.activePointer.isDown;
+      // --- chute (locked out during the handoff, so he freefalls into frame) ---
+      const holding = !this.handoff && (this.keys.SPACE.isDown || this.keys.W.isDown
+        || this.cursors.up.isDown || this.input.activePointer.isDown);
       if (!holding) this.mustRelease = false; // ran dry: require a fresh press
       const wantOpen = holding && !this.mustRelease && this.juice > 2;
       if (wantOpen && !this.chuteOpen) this.deploy();
@@ -984,8 +999,7 @@ class PlayScene extends Phaser.Scene {
       // gentle body tilt with horizontal speed
       this.dude.rotation = (body.velocity.x / CFG.maxVxOpen) * 0.14;
 
-      this.updateRows(dt);
-      this.updateBirds(time);
+      if (!this.handoff) { this.updateRows(dt); this.updateBirds(time); }
       this.updateRobber(time, dt);
       this.updateCash(time);
       // you're on the case: a slow trickle of cash for every metre you fall
@@ -994,6 +1008,11 @@ class PlayScene extends Phaser.Scene {
       this.cashText.setText('$' + Math.floor(this.cash).toLocaleString('en-US'));
       this.depthText.setText(`${Math.max(0, Math.floor((this.dude.y - this.startY) * CFG.metresPerPx))} m`);
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
+    }
+
+    // once the handoff is done, hold the dude at a fixed screen height
+    if (this.state === 'playing' && !this.handoff) {
+      this.cameras.main.scrollY = this.dude.y - H * CFG.holdFrac;
     }
 
     this.positionHair(time, 0.28 + 0.8 * speed01, dt);
