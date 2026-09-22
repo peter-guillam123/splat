@@ -645,7 +645,7 @@ class PlayScene extends Phaser.Scene {
   placeSniper(row) {
     // perched on the bar end nearest the gap, feet on the ledge, facing the gap
     const x = row.sniperLeft ? row.l.x + W - 46 : row.r.x + 46;
-    row.sniper.setPosition(x, row.y - 62);
+    row.sniper.setPosition(x, row.y - 39); // feet (85/96 of the sprite) on the ledge top
   }
 
   updateSniper(row) {
