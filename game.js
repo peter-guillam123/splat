@@ -22,8 +22,11 @@ const CFG = {
   juiceRefill: 10,       // per second while closed
   pullCost: 22,          // spent up front on every ripcord pull: mashing empties it
   rearmMs: 620,          // after you let go, the cord needs this long to re-arm
-  dragSteerPx: 24,       // a press that moves this far sideways (game px) is a steer, not a pull
-  holdGraceMs: 90,       // a press that stays still this long is a pull
+  // --- touch ---
+  swipePx: 24,           // a press that moves this far (game px) is a ripcord flick
+  swipeKick: 260,        // sideways kick the canopy gets from the flick's direction
+  swipeSteerPx: 90,      // sliding this far from where the flick landed = full steer
+  swipeSettleMs: 160,    // the flick's own movement in this window doesn't count as a slide
   juiceNearMiss: 20,
   nearMissDist: 46,      // px from girder edge that counts as a graze
   rowGapStart: 270,      // gap width, shrinks with depth
@@ -148,7 +151,8 @@ class PlayScene extends Phaser.Scene {
     this.cash = 0;         // headline score, in dollars
     this.chaseLevel = 0;   // rises each catch; the robber gets faster
     this.streak = 0;       // catches this run; each one multiplies the next payday
-    this.pressMode = 'idle'; // touch press: idle | pending | hold (chute) | steer (freefall)
+    this.touches = new Map(); // per-pointer touch state, see readTouch()
+    this.pullFailUntil = 0;   // the meter flashes after a flick that couldn't open
     this.nextCashAt = 0;
 
     this.cameras.main.setBounds(0, -2000, W, 4e9);
@@ -451,7 +455,10 @@ class PlayScene extends Phaser.Scene {
     const title = this.add.text(W / 2, H * 0.18, 'SPLAT!', {
       fontFamily: FONT, fontSize: '132px', fontStyle: '700', color: '#ffffff',
     }).setOrigin(0.5).setShadow(0, 4, 'rgba(0,0,0,0.28)', 14).setLetterSpacing(2);
-    const sub = this.add.text(W / 2, H * 0.18 + 92, 'catch the robber · hold to open your chute', {
+    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const subText = coarse ? 'catch the robber · tap sides to steer · flick to pull'
+      : 'catch the robber · hold to open your chute';
+    const sub = this.add.text(W / 2, H * 0.18 + 92, subText, {
       fontFamily: FONT, fontSize: '26px', fontStyle: '500', color: '#ffffff',
     }).setOrigin(0.5).setAlpha(0.9).setLetterSpacing(0.5).setShadow(0, 2, 'rgba(0,0,0,0.25)', 5);
     const hint = this.add.text(W / 2, H * 0.72, 'tap to begin', {
@@ -490,6 +497,8 @@ class PlayScene extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('A,D,W,SPACE,R');
 
+    this.input.addPointer(2); // one thumb steering, the other on the cord
+    this.cord = this.add.graphics().setDepth(8.5); // the ripcord tug, drawn on deploy
     this.input.on('pointerdown', () => {
       SFX.ensure();
       if (this.state === 'ready') this.startRun();
@@ -1155,9 +1164,10 @@ class PlayScene extends Phaser.Scene {
     else this.dude.body.setSize(64, 100).setOffset(64, 66); // compact belly-down mass
   }
 
-  deploy() {
+  deploy(kick = 0) {
     this.chuteOpen = true;
     this.juice = Math.max(0, this.juice - CFG.pullCost); // the pull itself costs
+    this.tugCord(kick);
     this.dude.setTexture('dude-hang');
     this.poseBody(true);
     this.dude.setMaxVelocity(CFG.maxVxOpen, CFG.terminalVy);
@@ -1170,6 +1180,9 @@ class PlayScene extends Phaser.Scene {
     this.chute.setScale(0.06, 0.03);
     this.tweens.add({ targets: this.chute, scaleX: 0.5, duration: 210, ease: 'Back.out' });
     this.tweens.add({ targets: this.chute, scaleY: 0.5, duration: 170, ease: 'Cubic.out' });
+
+    // a flick's sideways direction sails the canopy that way as it opens
+    if (kick) this.dude.setVelocityX(Phaser.Math.Clamp(this.dude.body.velocity.x + kick, -CFG.maxVxOpen, CFG.maxVxOpen));
 
     // hair whips upward on the jolt
     this.hairSpring.v += 2.2;
@@ -1354,6 +1367,68 @@ class PlayScene extends Phaser.Scene {
     this.overGroup = g;
   }
 
+  // Classify every finger that's down, once per press. A press starts as a
+  // nudge for its half of the screen; if it moves more than swipePx it becomes
+  // a pull (the ripcord flick) for as long as it's held, and its sideways slide
+  // from that point steers. Returns this frame's combined input.
+  readTouch(time) {
+    const out = { nudge: 0, slide: 0, pulling: false, kick: 0, flicked: false };
+    const seen = new Set();
+    for (const p of this.input.manager.pointers) {
+      if (!p.isDown) continue;
+      seen.add(p.id);
+      let t = this.touches.get(p.id);
+      if (!t) { t = { mode: 'nudge', downX: p.x, downY: p.y }; this.touches.set(p.id, t); }
+      if (t.mode === 'nudge') {
+        const dx = p.x - t.downX, dy = p.y - t.downY;
+        if (Math.hypot(dx, dy) > CFG.swipePx) {
+          t.mode = 'pull'; t.originX = p.x; t.settleUntil = time + CFG.swipeSettleMs;
+          // the flick's sideways lean, scaled by how sideways it was
+          t.kick = Math.abs(dx) > 8 ? Math.sign(dx) * CFG.swipeKick * Math.min(1, Math.abs(dx) / 60) : 0;
+          out.flicked = true; out.kick = t.kick;
+        } else {
+          out.nudge += p.x < W / 2 ? -1 : 1;
+        }
+      }
+      if (t.mode === 'pull') {
+        out.pulling = true;
+        // the joystick centres where the flick comes to rest, not where it
+        // was recognised, so the flick's own tail doesn't read as a slide
+        if (time < t.settleUntil) t.originX = p.x;
+        else out.slide += Phaser.Math.Clamp((p.x - t.originX) / CFG.swipeSteerPx, -1, 1);
+      }
+    }
+    for (const id of this.touches.keys()) if (!seen.has(id)) this.touches.delete(id);
+    out.nudge = Phaser.Math.Clamp(out.nudge, -1, 1);
+    out.slide = Phaser.Math.Clamp(out.slide, -1, 1);
+    return out;
+  }
+
+  // The ripcord: a handle yanked out from his shoulder on a short cord, in the
+  // direction of the flick (down and outward by default), then gone.
+  tugCord(kick = 0) {
+    if (this.reducedMotion) return;
+    const dir = kick ? Math.sign(kick) : -1;
+    const o = { t: 0 };
+    const g = this.cord;
+    this.tweens.add({
+      targets: o, t: 1, duration: 260, ease: 'Cubic.out',
+      onUpdate: () => {
+        const sx = this.dude.x + dir * 10, sy = this.dude.y - 18; // the shoulder
+        const reach = Math.min(1, o.t * 1.6);                      // out fast, then hangs
+        const hx = sx + dir * 54 * reach, hy = sy + 40 * reach + Math.sin(o.t * 9) * 3;
+        const a = o.t < 0.7 ? 1 : 1 - (o.t - 0.7) / 0.3;
+        g.clear();
+        g.lineStyle(3, 0xd9c9a8, a);
+        g.beginPath(); g.moveTo(sx, sy);
+        g.lineTo(sx + dir * 20 * reach, sy + 26 * reach); g.lineTo(hx, hy); g.strokePath();
+        g.lineStyle(4, 0xff5a3c, a);
+        g.strokeCircle(hx, hy + 6, 7); // the red ring handle
+      },
+      onComplete: () => g.clear(),
+    });
+  }
+
   drawJuice() {
     const g = this.juiceBar;
     g.clear();
@@ -1369,6 +1444,10 @@ class PlayScene extends Phaser.Scene {
     if (frac > 0.001) {
       g.fillStyle(rearming ? 0xffffff : (low ? 0xff5a3c : 0xffce54), alpha);
       g.fillRoundedRect(bx, by, Math.max(bw * frac, bh), bh, bh / 2);
+    }
+    if (this.time.now < this.pullFailUntil) { // a flick with no cord to pull: a red blink over the track
+      g.fillStyle(0xff5a3c, 0.35 + 0.35 * Math.sin(this.time.now / 45));
+      g.fillRoundedRect(bx - 3, by - 3, bw + 6, bh + 6, (bh + 6) / 2);
     }
   }
 
@@ -1410,16 +1489,19 @@ class PlayScene extends Phaser.Scene {
 
     if (this.state === 'playing') {
       // --- steering ---
+      // Touch mirrors the keyboard: a still thumb on the left or right half
+      // nudges that way; a flick anywhere pulls the cord, and while that thumb
+      // stays down, sliding it sideways steers (a small joystick centred where
+      // the flick landed). Keys and thumbs add up, clamped.
+      const touch = this.readTouch(time);
       const left = this.cursors.left.isDown || this.keys.A.isDown;
       const right = this.cursors.right.isDown || this.keys.D.isDown;
       const accel = this.chuteOpen ? CFG.steerAccelOpen : CFG.steerAccelFree;
       let ax = 0;
-      if (left) ax = -accel;
-      else if (right) ax = accel;
-      else if (this.input.activePointer.isDown) {
-        const dx = this.input.activePointer.worldX - this.dude.x;
-        ax = Phaser.Math.Clamp(dx * 9, -accel, accel);
-      }
+      if (left) ax -= accel;
+      if (right) ax += accel;
+      ax += touch.nudge * accel + touch.slide * accel;
+      ax = Phaser.Math.Clamp(ax, -accel, accel);
       if (time < this.flusterUntil) ax *= 0.25; // dazed after a bird clatters you
       body.setAccelerationX(ax);
       // gentle air drag when not steering; suspended briefly so a bird shove carries
@@ -1430,24 +1512,16 @@ class PlayScene extends Phaser.Scene {
       if (this.dude.x > W - 40) { this.dude.x = W - 40; if (body.velocity.x > 0) body.setVelocityX(0); }
 
       // --- chute (locked out during the handoff, so he freefalls into frame) ---
-      // Touch (and mouse): a still press pulls the cord; a press that starts
-      // moving sideways steers in freefall without spending a pull. Decided
-      // once per press, so a hold that later drifts keeps its chute.
-      const p = this.input.activePointer;
-      if (!p.isDown) this.pressMode = 'idle';
-      else if (this.pressMode === 'idle') { this.pressMode = 'pending'; this.pressAt = time; }
-      if (this.pressMode === 'pending') {
-        if (Math.abs(p.x - p.downX) > CFG.dragSteerPx) this.pressMode = 'steer';
-        else if (time - this.pressAt > CFG.holdGraceMs) this.pressMode = 'hold';
-      }
       const holding = !this.handoff && (this.keys.SPACE.isDown || this.keys.W.isDown
-        || this.cursors.up.isDown || this.pressMode === 'hold');
+        || this.cursors.up.isDown || touch.pulling);
       if (!holding) this.mustRelease = false; // ran dry: require a fresh press
       // a pull costs a chunk up front and the cord must have re-armed since the
       // last release — so mashing the chute to hover no longer works
       const wantOpen = holding && !this.mustRelease && this.juice >= CFG.pullCost && time >= this.rearmUntil;
-      if (wantOpen && !this.chuteOpen) this.deploy();
+      if (wantOpen && !this.chuteOpen) this.deploy(touch.kick);
       else if (!holding && this.chuteOpen) this.closeChute(false);
+      // a flick that found the cord dead: flash the meter so the thumb knows why
+      if (touch.flicked && !wantOpen && !this.chuteOpen) this.pullFailUntil = time + 380;
 
       if (this.chuteOpen) {
         this.juice = Math.max(0, this.juice - CFG.juiceDrain * dt);
