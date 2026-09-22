@@ -139,6 +139,7 @@ class PlayScene extends Phaser.Scene {
     this.bestCash = parseInt(localStorage.getItem('splat.bestcash') || '0', 10);
     this.cash = 0;         // headline score, in dollars
     this.chaseLevel = 0;   // rises each catch; the robber gets faster
+    this.streak = 0;       // catches this run; each one multiplies the next payday
     this.nextCashAt = 0;
 
     this.cameras.main.setBounds(0, -2000, W, 4e9);
@@ -409,6 +410,10 @@ class PlayScene extends Phaser.Scene {
     this.cashText = ui(this.add.text(W - 26, 22, '$0', {
       fontFamily: FONT, fontSize: '52px', fontStyle: '700', color: '#ffd34d',
     }).setOrigin(1, 0).setLetterSpacing(1).setShadow(0, 2, 'rgba(0,0,0,0.35)', 6));
+    // the streak multiplier, only shown once you've got one going
+    this.streakText = ui(this.add.text(W - 26, 86, '', {
+      fontFamily: FONT, fontSize: '24px', fontStyle: '700', color: '#ffd34d',
+    }).setOrigin(1, 0).setAlpha(0.9).setLetterSpacing(1).setShadow(0, 1, 'rgba(0,0,0,0.3)', 3));
 
     // custom mute glyph (no more emoji)
     this.muteIcon = ui(this.add.graphics()).setPosition(38, 40);
@@ -780,10 +785,16 @@ class PlayScene extends Phaser.Scene {
 
   catchRobber() {
     this.caught = true;
-    const payday = CFG.catchPayday + this.chaseLevel * 500;
+    // consecutive catches multiply the payday: x1, x1.5, x2 ... up to x4
+    const fmt = (m) => (Math.round(m * 10) / 10).toString();
+    const mult = Math.min(1 + 0.5 * this.streak, 4);
+    const payday = Math.round((CFG.catchPayday + this.chaseLevel * 500) * mult);
     this.cash += payday;
     this.chaseLevel++;
-    this.floatText('GOTCHA!  +$' + payday.toLocaleString('en-US'), this.dude.x, this.dude.y - 30, '#ffd166', 34);
+    this.streak++;
+    this.streakText.setText('\u00d7' + fmt(Math.min(1 + 0.5 * this.streak, 4)));
+    const tag = mult > 1 ? '\u00d7' + fmt(mult) + '  ' : '';
+    this.floatText(tag + 'GOTCHA!  +$' + payday.toLocaleString('en-US'), this.dude.x, this.dude.y - 30, '#ffd166', 34);
     SFX.payday();
     if (!this.reducedMotion) this.cameras.main.shake(200, 0.007);
     this.cashExplode(this.robber.x, this.robber.y);
