@@ -146,6 +146,36 @@
       lfo.start(t); lfo.stop(t + 0.23);
     }
 
+    whoosh() { // punching through the cloud deck
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+      const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
+      bp.frequency.setValueAtTime(400, t);
+      bp.frequency.exponentialRampToValueAtTime(2400, t + 0.18);
+      bp.frequency.exponentialRampToValueAtTime(500, t + 0.6);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.32, t + 0.12);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+      src.connect(bp).connect(g).connect(this.master);
+      src.start(t); src.stop(t + 0.7);
+    }
+
+    smash() { // through the road: a crunch and a deep slam
+      if (!this.ctx) return;
+      this._noiseBurst(0.5, 0.42, 'lowpass', 1400);
+      this._noiseBurst(0.18, 0.3, 'highpass', 1800);
+      this._tone('sine', 110, 28, 0.7, 0.4);
+      this._tone('triangle', 70, 24, 0.5, 0.22, 0.03);
+    }
+
+    rumble() { // into the lava: a long low shudder
+      if (!this.ctx) return;
+      this._noiseBurst(1.4, 0.22, 'lowpass', 220);
+      this._tone('sine', 60, 38, 1.4, 0.3);
+    }
+
     boom() { // grenade blast: a low thump + a burst of noise
       if (!this.ctx) return;
       this._noiseBurst(0.4, 0.34, 'lowpass', 900);

@@ -318,6 +318,15 @@ class PlayScene extends Phaser.Scene {
       mk(W - 140, 140, 0.72, 0xffffff, 1, 0.9, true);
       this.walls.push({ zone: z, layers });
     }
+
+    // lava zone: embers drifting up from the bottom of the screen
+    this.embers = this.add.particles(0, 0, 'puff', {
+      x: { min: 0, max: W }, y: H + 20,
+      speedY: { min: -140, max: -60 }, speedX: { min: -30, max: 30 },
+      lifespan: { min: 2200, max: 3600 }, scale: { start: 0.22, end: 0 },
+      alpha: { start: 0.9, end: 0 }, tint: [0xffc14d, 0xff7a1a, 0xffe6a0],
+      frequency: 90, emitting: false,
+    }).setScrollFactor(0).setDepth(2.5);
   }
 
   buildDude() {
@@ -438,6 +447,8 @@ class PlayScene extends Phaser.Scene {
     this.handoffScroll = this.cameras.main.scrollY;
     this.handoffStart = this.time.now;
     this.nextRowY = Infinity; // set for real when the handoff completes
+    this.placeSetPieces();
+    this.crossed = {};
     this.tweens.add({ targets: this.titleGroup, alpha: 0, duration: 350, onComplete: () => this.titleGroup.setVisible(false) });
   }
 
@@ -913,6 +924,60 @@ class PlayScene extends Phaser.Scene {
     for (const b of this.birdsGroup.getChildren()) b.setTint(b.zoneTint ? this.mulTint(dim, b.zoneTint) : dim);
   }
 
+  // ---------- zone set-pieces ----------
+
+  // Scenery that marks the boundaries, placed in world space once startY is
+  // known: a thick cloud deck you punch through into the city, and the street
+  // you smash through into the hole. Neither is solid — the drama is in the
+  // crossing (see enterZone).
+  placeSetPieces() {
+    const cityY = this.startY + ZONES[1].start;
+    this.deck = [];
+    for (let i = 0; i < 9; i++) {
+      const key = i % 3 === 0 ? 'cloud-1' : (i % 3 === 1 ? 'cloud-2' : 'cloud-1');
+      const c = this.add.image(Phaser.Math.Between(-40, W + 40), cityY - 120 + Phaser.Math.Between(-140, 140), key)
+        .setDepth(3).setAlpha(0.97).setScale(Phaser.Math.FloatBetween(1.3, 1.9));
+      this.deck.push(c);
+    }
+    const holeY = this.startY + ZONES[2].start;
+    this.road = this.add.tileSprite(0, holeY - 30, W, 96, 'road').setOrigin(0, 0).setDepth(4.5);
+    this.road.setTileScale(0.5);
+  }
+
+  enterZone(k) {
+    const z = ZONES[k];
+    const x = this.dude.x, y = this.dude.y;
+    if (z.key === 'city') {
+      // punching through the cloud deck: a burst of mist and a whoosh
+      SFX.whoosh();
+      this.puffs.explode(40, x, y - 40);
+      const veil = this.add.rectangle(W / 2, H / 2, W, H, 0xffffff, 0.75).setScrollFactor(0).setDepth(115);
+      this.tweens.add({ targets: veil, alpha: 0, duration: 520, ease: 'Cubic.out', onComplete: () => veil.destroy() });
+      this.deck.forEach((c) => this.tweens.add({ targets: c, alpha: 0.35, duration: 700 }));
+    } else if (z.key === 'hole') {
+      // through the road: debris, a slam, and the slab caves in
+      SFX.smash();
+      if (!this.reducedMotion) this.cameras.main.shake(420, 0.02);
+      const debris = this.add.particles(x, y, 'drop', {
+        speed: { min: 160, max: 560 }, angle: { min: 200, max: 340 }, gravityY: 1600,
+        lifespan: { min: 600, max: 1200 }, scale: { start: 2.2, end: 0.6 }, rotate: { min: 0, max: 360 },
+        tint: [0x3b3b40, 0x55555c, 0x6b4f3a, 0x8a6a50], alpha: { start: 1, end: 0 }, emitting: false,
+      }).setDepth(12);
+      debris.explode(38);
+      this.time.delayedCall(1400, () => debris.destroy());
+      if (this.road) this.tweens.add({ targets: this.road, alpha: 0, y: '+=60', duration: 900, ease: 'Cubic.in' });
+      const flash = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55).setScrollFactor(0).setDepth(115);
+      this.tweens.add({ targets: flash, alpha: 0, duration: 700, onComplete: () => flash.destroy() });
+    } else if (z.key === 'lava') {
+      // into the heat: a rumble, an orange bloom, and the embers start rising
+      SFX.rumble();
+      if (!this.reducedMotion) this.cameras.main.shake(380, 0.012);
+      const bloom = this.add.rectangle(W / 2, H / 2, W, H, 0xff6a1a, 0.5).setScrollFactor(0).setDepth(115);
+      this.tweens.add({ targets: bloom, alpha: 0, duration: 900, onComplete: () => bloom.destroy() });
+      this.embers.start();
+    }
+  }
+
   // ---------- chute ----------
 
   // Hitbox follows the pose: tall+narrow hanging under the chute, wide+short
@@ -1226,6 +1291,11 @@ class PlayScene extends Phaser.Scene {
       this.updateRobber(time, dt);
       this.updateCash(time);
       this.updateGrenades(time);
+      // crossing into a new zone fires its set-piece, once
+      const depthP = this.dude.y - this.startY;
+      for (let k = 1; k < ZONES.length; k++) {
+        if (!this.crossed[k] && depthP >= ZONES[k].start) { this.crossed[k] = true; this.enterZone(k); }
+      }
       // money is earned, never given: only cash pickups and catching him pay
       this.cashText.setText('$' + Math.floor(this.cash).toLocaleString('en-US'));
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
