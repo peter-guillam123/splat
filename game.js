@@ -73,6 +73,18 @@ const SKY_BANDS = [
 ];
 const BAND_PX = 7000;
 
+// Zones: seamless bands the fall passes through, by depth (px below the start).
+// Each has a background, an obstacle skin, a flying-hazard skin, side walls, and
+// whether the open sky (with its day/night cycle) is visible. One blends into
+// the next over ZONE_FADE px just before its boundary. bg = [background, glow].
+const ZONES = [
+  { key: 'sky',  start: 0,     sky: true,  clouds: true,  obstacle: 'girder',   bird: 'gull',   wall: null,       bg: null },
+  { key: 'city', start: 10000, sky: true,  clouds: false, obstacle: 'ledge',    bird: 'pigeon', wall: 'facade',   bg: null },
+  { key: 'hole', start: 26000, sky: false, clouds: false, obstacle: 'rock',     bird: 'bat',    wall: 'rockwall', bg: [0x2a2320, 0x4a3a30] },
+  { key: 'lava', start: 46000, sky: false, clouds: false, obstacle: 'lavarock', bird: 'bat',    wall: 'lavawall', bg: [0x1c100c, 0xff5a1a] },
+];
+const ZONE_FADE = 1400;
+
 const FONT = '"Space Grotesk", -apple-system, system-ui, sans-serif';
 
 class PlayScene extends Phaser.Scene {
@@ -97,6 +109,17 @@ class PlayScene extends Phaser.Scene {
     this.load.svg('cash-note', 'assets/cash-note.svg', { width: 96, height: 56 });
     this.load.svg('cash-bag', 'assets/cash-bag.svg', { width: 88, height: 96 });
     this.load.svg('grenade', 'assets/grenade.svg', { width: 128, height: 160 });
+    // zone skins
+    this.load.svg('ledge', 'assets/ledge.svg', { width: 256, height: 80 });
+    this.load.svg('rock', 'assets/rock.svg', { width: 256, height: 80 });
+    this.load.svg('lavarock', 'assets/lavarock.svg', { width: 256, height: 80 });
+    this.load.svg('facade', 'assets/facade.svg', { width: 320, height: 512 });
+    this.load.svg('rockwall', 'assets/rockwall.svg', { width: 320, height: 512 });
+    this.load.svg('lavawall', 'assets/lavawall.svg', { width: 320, height: 512 });
+    this.load.svg('bat-up', 'assets/bat-up.svg', { width: 160, height: 100 });
+    this.load.svg('bat-down', 'assets/bat-down.svg', { width: 160, height: 100 });
+    this.load.svg('sniper', 'assets/sniper.svg', { width: 192, height: 192 });
+    this.load.svg('road', 'assets/road.svg', { width: 256, height: 192 });
   }
 
   create() {
@@ -145,6 +168,8 @@ class PlayScene extends Phaser.Scene {
       frames: [{ key: 'bird-big-up' }, { key: 'bird-big-down' }] });
     this.anims.create({ key: 'flap-small', frameRate: 13, repeat: -1,
       frames: [{ key: 'bird-small-up' }, { key: 'bird-small-down' }] });
+    this.anims.create({ key: 'flap-bat', frameRate: 10, repeat: -1,
+      frames: [{ key: 'bat-up' }, { key: 'bat-down' }] });
     this.birdsGroup = this.physics.add.group({ allowGravity: false });
     this.nextBirdAt = 0;
     this.flusterUntil = 0;
@@ -270,6 +295,28 @@ class PlayScene extends Phaser.Scene {
         .setScrollFactor(0).setDepth(0.4).setAlpha(0);
       s.twinkle = Phaser.Math.FloatBetween(0, Math.PI * 2);
       this.stars.push(s);
+    }
+
+    // Zone backdrops: near wall strips at the screen edges and a wider, darker
+    // far set tucked behind them, each scrolling at its own parallax so the
+    // canyon/shaft has depth. Faded in and out by zone weight in updateSky.
+    this.walls = [];
+    for (const z of ZONES) {
+      if (!z.wall) continue;
+      const layers = [];
+      const mk = (x, w, par, tint, baseAlpha, depth, flip) => {
+        const L = this.add.tileSprite(x, 0, w, H, z.wall).setOrigin(0, 0)
+          .setScrollFactor(0).setDepth(depth).setAlpha(0).setVisible(false).setTint(tint);
+        L.setTileScale(0.5);
+        if (flip) L.setFlipX(true);
+        L.par = par; L.baseAlpha = baseAlpha;
+        layers.push(L);
+      };
+      mk(24, 230, 0.38, 0x7d838f, 0.92, 0.8, false);
+      mk(W - 24 - 230, 230, 0.38, 0x7d838f, 0.92, 0.8, true);
+      mk(0, 140, 0.72, 0xffffff, 1, 0.9, false);
+      mk(W - 140, 140, 0.72, 0xffffff, 1, 0.9, true);
+      this.walls.push({ zone: z, layers });
     }
   }
 
@@ -440,8 +487,9 @@ class PlayScene extends Phaser.Scene {
 
     // Each girder is a full screen-width tile hanging off its gap edge, so
     // moving rows can slide without resizing (the overhang stays offscreen).
-    const l = this.add.tileSprite(gapL - W, y, W, 40, 'girder').setOrigin(0, 0.5).setDepth(5);
-    const r = this.add.tileSprite(gapR, y, W, 40, 'girder').setOrigin(0, 0.5).setDepth(5);
+    const skin = this.zoneAt(depth).obstacle; // girder / ledge / rock / lavarock
+    const l = this.add.tileSprite(gapL - W, y, W, 40, skin).setOrigin(0, 0.5).setDepth(5);
+    const r = this.add.tileSprite(gapR, y, W, 40, skin).setOrigin(0, 0.5).setDepth(5);
     l.setTileScale(0.5); r.setTileScale(0.5);
     this.girders.add(l); this.girders.add(r);
     l.body.setImmovable(true); r.body.setImmovable(true);
@@ -532,14 +580,14 @@ class PlayScene extends Phaser.Scene {
     this.clouds.push(c);
   }
 
-  updateClouds() {
+  updateClouds(depth) {
     const cam = this.cameras.main;
     for (let i = this.clouds.length - 1; i >= 0; i--) {
       const c = this.clouds[i];
       const screenY = c.y - cam.scrollY * c.sf;
       if (screenY < -160) { c.destroy(); this.clouds.splice(i, 1); }
     }
-    while (this.clouds.length < 6) this.spawnCloud(false);
+    if (this.zoneAt(depth).clouds) while (this.clouds.length < 6) this.spawnCloud(false);
   }
 
   // ---------- the robber & the cash ----------
@@ -730,17 +778,22 @@ class PlayScene extends Phaser.Scene {
     const dir = fromLeft ? 1 : -1;
     const y = this.dude.y + Phaser.Math.Between(240, 680); // ahead in the fall
     const x = fromLeft ? -70 : W + 70;
-    const b = this.birdsGroup.create(x, y, big ? 'bird-big-up' : 'bird-small-up')
-      .setScale(0.5).setDepth(6);
+    const zone = this.zoneAt(this.dude.y - this.startY);
+    const bat = zone.bird === 'bat';
+    const b = this.birdsGroup.create(x, y, bat ? 'bat-up' : (big ? 'bird-big-up' : 'bird-small-up'))
+      .setScale(bat ? (big ? 0.85 : 0.55) : 0.5).setDepth(6);
+    b.bat = bat;
+    // pigeons are the gulls gone grey; lava bats catch the glow
+    b.zoneTint = zone.bird === 'pigeon' ? 0xa9adb8 : (zone.key === 'lava' ? 0xffb08a : null);
     b.big = big;
     b.setFlipX(dir > 0); // art faces left; flip it to fly right
     const rng = big ? CFG.birdSpeedBig : CFG.birdSpeedSmall;
     b.body.setVelocityX(Phaser.Math.Between(rng[0], rng[1]) * dir);
     // forgiving central hitbox (texture space; scales with the sprite)
-    if (big) b.body.setSize(150, 66).setOffset(56, 74);
+    if (bat) b.body.setSize(84, 52).setOffset(38, 26);
+    else if (big) b.body.setSize(150, 66).setOffset(56, 74);
     else b.body.setSize(94, 52).setOffset(36, 40);
-    b.play(big ? 'flap-big' : 'flap-small');
-    b.tint0 = 0xffffff;
+    b.play(bat ? 'flap-bat' : (big ? 'flap-big' : 'flap-small'));
   }
 
   updateBirds(time) {
@@ -793,35 +846,71 @@ class PlayScene extends Phaser.Scene {
 
   // ---------- sky ----------
 
+  // Which zone we're in and how far it has blended into the next.
+  zoneBlend(depth) {
+    let i = 0;
+    for (let k = 0; k < ZONES.length; k++) if (depth >= ZONES[k].start) i = k;
+    const next = ZONES[i + 1];
+    const t = next ? Phaser.Math.Clamp((depth - (next.start - ZONE_FADE)) / ZONE_FADE, 0, 1) : 0;
+    return { i, j: next ? i + 1 : i, t };
+  }
+  zoneAt(depth) { const b = this.zoneBlend(depth); return ZONES[b.t < 0.5 ? b.i : b.j]; }
+  hexRGB(h) { return [(h >> 16) & 255, (h >> 8) & 255, h & 255]; }
+  mulTint(a, b) {
+    const A = this.hexRGB(a), B = this.hexRGB(b);
+    return Phaser.Display.Color.GetColor(
+      Math.round(A[0] * B[0] / 255), Math.round(A[1] * B[1] / 255), Math.round(A[2] * B[2] / 255));
+  }
+
   updateSky(depth) {
+    // the open-sky day/night cycle
     const pos = (depth / BAND_PX) % SKY_BANDS.length;
     const i = Math.floor(pos) % SKY_BANDS.length;
     const j = (i + 1) % SKY_BANDS.length;
     const f = pos - Math.floor(pos);
     const lerp = (a, b) => Math.round(Phaser.Math.Linear(a, b, f));
     const A = SKY_BANDS[i], B = SKY_BANDS[j];
-
-    const sky = Phaser.Display.Color.GetColor(
-      lerp(A.sky[0], B.sky[0]), lerp(A.sky[1], B.sky[1]), lerp(A.sky[2], B.sky[2]));
-    const hor = Phaser.Display.Color.GetColor(
-      lerp(A.horizon[0], B.horizon[0]), lerp(A.horizon[1], B.horizon[1]), lerp(A.horizon[2], B.horizon[2]));
-    this.cameras.main.setBackgroundColor(sky);
-    this.glow.setTint(hor);
-
+    const skyRGB = [lerp(A.sky[0], B.sky[0]), lerp(A.sky[1], B.sky[1]), lerp(A.sky[2], B.sky[2])];
+    const horRGB = [lerp(A.horizon[0], B.horizon[0]), lerp(A.horizon[1], B.horizon[1]), lerp(A.horizon[2], B.horizon[2])];
     const night = Phaser.Math.Linear(A.night, B.night, f);
+
+    // zone blend: background is the cycling sky where the sky shows, or the
+    // zone's own colours underground, mixed across the fade
+    const zb = this.zoneBlend(depth);
+    const zi = ZONES[zb.i], zj = ZONES[zb.j];
+    const wI = 1 - zb.t, wJ = zb.t;
+    const skyW = (zi.sky ? wI : 0) + (zj.sky ? wJ : 0);
+    const colOf = (z, k) => z.bg ? this.hexRGB(z.bg[k]) : (k === 0 ? skyRGB : horRGB);
+    const mix = (a, b) => Phaser.Display.Color.GetColor(
+      Math.round(a[0] * wI + b[0] * wJ), Math.round(a[1] * wI + b[1] * wJ), Math.round(a[2] * wI + b[2] * wJ));
+    this.cameras.main.setBackgroundColor(mix(colOf(zi, 0), colOf(zj, 0)));
+    this.glow.setTint(mix(colOf(zi, 1), colOf(zj, 1)));
+    this.skyW = skyW;
+    this.zoneNow = ZONES[zb.t < 0.5 ? zb.i : zb.j];
+
     const t = this.time.now;
-    for (const s of this.stars) {
-      s.setAlpha(night * (0.5 + 0.5 * Math.sin(t / 900 + s.twinkle)));
+    for (const s of this.stars) s.setAlpha(night * skyW * (0.5 + 0.5 * Math.sin(t / 900 + s.twinkle)));
+
+    // zone walls: fade by zone weight and scroll with the camera at their parallax
+    const sy = this.cameras.main.scrollY;
+    for (const wset of this.walls) {
+      const w = wset.zone === zi ? wI : (wset.zone === zj ? wJ : 0);
+      for (const L of wset.layers) {
+        L.setVisible(w > 0.001);
+        L.setAlpha(w * L.baseAlpha);
+        if (w > 0.001) L.tilePositionY = sy * L.par * 2;
+      }
     }
 
-    // dim the scenery as night falls so girders and clouds sit in the scene
+    // dim the scenery as night falls, only where the sky is actually showing
+    const nd = night * skyW;
     const dim = Phaser.Display.Color.GetColor(
-      Math.round(Phaser.Math.Linear(255, 158, night)),
-      Math.round(Phaser.Math.Linear(255, 170, night)),
-      Math.round(Phaser.Math.Linear(255, 205, night)));
+      Math.round(Phaser.Math.Linear(255, 158, nd)),
+      Math.round(Phaser.Math.Linear(255, 170, nd)),
+      Math.round(Phaser.Math.Linear(255, 205, nd)));
     for (const row of this.rows) { row.l.setTint(dim); row.r.setTint(dim); }
     for (const c of this.clouds) c.setTint(dim);
-    for (const b of this.birdsGroup.getChildren()) b.setTint(dim);
+    for (const b of this.birdsGroup.getChildren()) b.setTint(b.zoneTint ? this.mulTint(dim, b.zoneTint) : dim);
   }
 
   // ---------- chute ----------
@@ -1061,7 +1150,7 @@ class PlayScene extends Phaser.Scene {
       this.dude.y = this.robber.y - CFG.titleGap;
       this.dude.x = W / 2;
       this.cameras.main.scrollY = this.robber.y - H * CFG.titleFrac;
-      this.updateClouds();
+      this.updateClouds(0);
       this.updateSky(0); // pinned to the first sky band
       this.updateChevron();
       this.cashText.setText('$0');
@@ -1151,8 +1240,9 @@ class PlayScene extends Phaser.Scene {
     this.positionHair(time, 0.28 + 0.8 * speed01, dt);
     this.drawChute(time);
     this.updateChevron();
-    this.updateClouds();
-    this.updateSky(Math.max(0, this.dude.y - this.startY));
+    const depthNow = Math.max(0, this.dude.y - this.startY);
+    this.updateClouds(depthNow);
+    this.updateSky(depthNow);
     this.drawJuice();
   }
 
