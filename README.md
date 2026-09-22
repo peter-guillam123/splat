@@ -6,9 +6,8 @@ fall faster than he does. The name is a spoiler for how it usually ends.
 **Play it:** https://peter-guillam123.github.io/splat/
 
 Keyboard: hold space to open your chute, let go to dive, arrow keys to
-steer. Touch: tap and hold the left or right side to steer, flick anywhere
-to pull the cord (flick sideways and the canopy sails that way), keep the
-thumb down to stay under canopy. Catch the robber by touching him, grab the
+steer. Touch: the left of the screen steers (thumb left or right of the
+split), the right of the screen is the chute button, hold to open. Catch the robber by touching him, grab the
 cash he sheds, dodge the girders, birds, grenades and rooftop snipers. The fall runs from open sky into a canyon of
 skyscrapers, through the road into a hole, and finally into lava. About and
 diary at `about.html`.
