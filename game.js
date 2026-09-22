@@ -200,6 +200,8 @@ class PlayScene extends Phaser.Scene {
     this.robber.body.setVelocityY(CFG.robberVy);
     this.robber.body.setSize(140, 120).setOffset(26, 68); // generous "touch" area
     this.caught = false; // brief guard after a catch
+    // a soft warm halo behind him so he still reads in the dark zones
+    this.robberGlow = this.add.image(0, 0, 'flash').setScale(2.1).setDepth(9.5).setTint(0xffc98a).setAlpha(0.2);
     this.physics.add.overlap(this.dude, this.robber, () => {
       if (this.state === 'playing' && !this.handoff && !this.caught) this.catchRobber();
     });
@@ -262,6 +264,36 @@ class PlayScene extends Phaser.Scene {
       g.fillStyle(0xffffff, 1); g.fillRect(8.2, 3, 1.6, 12);    // quill
       g.generateTexture('feather', 18, 18);
       g.destroy();
+    }
+    if (!this.textures.exists('streak')) {
+      // a soft vertical streak for the speed lines
+      const c = this.textures.createCanvas('streak', 4, 48);
+      const ctx = c.getContext();
+      const grad = ctx.createLinearGradient(0, 0, 0, 48);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(0.5, 'rgba(255,255,255,1)');
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad; ctx.fillRect(1, 0, 2, 48);
+      c.refresh();
+    }
+    if (!this.textures.exists('sun')) {
+      const c = this.textures.createCanvas('sun', 96, 96);
+      const ctx = c.getContext();
+      const halo = ctx.createRadialGradient(48, 48, 22, 48, 48, 48);
+      halo.addColorStop(0, 'rgba(255,214,107,0.55)'); halo.addColorStop(1, 'rgba(255,214,107,0)');
+      ctx.fillStyle = halo; ctx.fillRect(0, 0, 96, 96);
+      ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(48, 48, 24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,240,190,0.7)'; ctx.beginPath(); ctx.arc(41, 41, 10, 0, Math.PI * 2); ctx.fill();
+      c.refresh();
+    }
+    if (!this.textures.exists('moon')) {
+      const c = this.textures.createCanvas('moon', 72, 72);
+      const ctx = c.getContext();
+      ctx.fillStyle = '#e9eef7'; ctx.beginPath(); ctx.arc(36, 36, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(160,172,196,0.55)';
+      [[28, 30, 5], [44, 42, 4], [38, 24, 3]].forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(29, 28, 7, 0, Math.PI * 2); ctx.fill();
+      c.refresh();
     }
     if (!this.textures.exists('glow')) {
       // vertical gradient, transparent top → solid bottom, tinted at runtime
@@ -327,6 +359,19 @@ class PlayScene extends Phaser.Scene {
       alpha: { start: 0.9, end: 0 }, tint: [0xffc14d, 0xff7a1a, 0xffe6a0],
       frequency: 90, emitting: false,
     }).setScrollFactor(0).setDepth(2.5);
+
+    // a sun and a moon that ride the day/night cycle (positioned in updateSky)
+    this.sun = this.add.image(W * 0.74, H * 0.2, 'sun').setScale(1.6).setScrollFactor(0).setDepth(0.45).setAlpha(0);
+    this.moon = this.add.image(W * 0.28, H * 0.2, 'moon').setScale(1.3).setScrollFactor(0).setDepth(0.45).setAlpha(0);
+
+    // speed lines: streaks race up the screen edges at terminal velocity
+    const streaks = (x0, x1) => this.add.particles(0, 0, 'streak', {
+      x: { min: x0, max: x1 }, y: { min: -40, max: H },
+      speedY: { min: -1500, max: -1100 }, lifespan: { min: 180, max: 300 },
+      scaleY: { min: 1.2, max: 2.2 }, alpha: { start: 0.42, end: 0 },
+      frequency: 34, emitting: false,
+    }).setScrollFactor(0).setDepth(3.2);
+    this.speedLines = [streaks(0, 90), streaks(W - 90, W)];
   }
 
   buildDude() {
@@ -625,6 +670,8 @@ class PlayScene extends Phaser.Scene {
     r.x += (targetX - r.x) * Math.min(1, 4 * dt);
     r.x = Phaser.Math.Clamp(r.x, 46, W - 46);
     r.setRotation(Phaser.Math.Clamp((targetX - r.x) * 0.004, -0.22, 0.22));
+    this.robberGlow.setPosition(r.x, r.y + 8).setVisible(r.visible)
+      .setAlpha(0.14 + 0.5 * (1 - (this.skyW === undefined ? 1 : this.skyW)));
 
     if (time > this.nextCashAt) {
       const depth = this.dude.y - this.startY;
@@ -898,6 +945,13 @@ class PlayScene extends Phaser.Scene {
     this.glow.setTint(mix(colOf(zi, 1), colOf(zj, 1)));
     this.skyW = skyW;
     this.zoneNow = ZONES[zb.t < 0.5 ? zb.i : zb.j];
+
+    // sun and moon: one orbit per full sky cycle; each shows only when up and
+    // only where the sky is
+    const ang = (pos / SKY_BANDS.length) * Math.PI * 2;
+    const hSun = Math.cos(ang), hMoon = -Math.cos(ang);
+    this.sun.setY(H * 0.46 - hSun * H * 0.36).setAlpha(Phaser.Math.Clamp(hSun, 0, 1) * skyW * 0.95);
+    this.moon.setY(H * 0.46 - hMoon * H * 0.36).setAlpha(Phaser.Math.Clamp(hMoon, 0, 1) * skyW * 0.9);
 
     const t = this.time.now;
     for (const s of this.stars) s.setAlpha(night * skyW * (0.5 + 0.5 * Math.sin(t / 900 + s.twinkle)));
@@ -1306,6 +1360,10 @@ class PlayScene extends Phaser.Scene {
     if ((this.state === 'playing' || this.state === 'tumbling') && !this.handoff) {
       this.cameras.main.scrollY = this.dude.y - H * CFG.holdFrac;
     }
+
+    // speed lines only when really moving, and never during the intro handoff
+    const streaking = this.state === 'playing' && !this.handoff && speed01 > 0.82;
+    for (const e of this.speedLines) e.emitting = streaking;
 
     this.positionHair(time, 0.28 + 0.8 * speed01, dt);
     this.drawChute(time);
