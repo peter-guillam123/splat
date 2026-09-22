@@ -20,6 +20,8 @@ const CFG = {
   juiceMax: 100,
   juiceDrain: 30,        // per second while open
   juiceRefill: 10,       // per second while closed
+  pullCost: 22,          // spent up front on every ripcord pull: mashing empties it
+  rearmMs: 620,          // after you let go, the cord needs this long to re-arm
   juiceNearMiss: 20,
   nearMissDist: 46,      // px from girder edge that counts as a graze
   rowGapStart: 270,      // gap width, shrinks with depth
@@ -105,6 +107,7 @@ class PlayScene extends Phaser.Scene {
     this.startY = 300;
     this.chuteOpen = false;
     this.juice = CFG.juiceMax;
+    this.rearmUntil = 0; // ripcord re-arm timer
     this.rows = [];
     this.clouds = [];
     this.nextRowY = this.startY + H * 1.35;
@@ -832,6 +835,7 @@ class PlayScene extends Phaser.Scene {
 
   deploy() {
     this.chuteOpen = true;
+    this.juice = Math.max(0, this.juice - CFG.pullCost); // the pull itself costs
     this.dude.setTexture('dude-hang');
     this.poseBody(true);
     this.dude.setMaxVelocity(CFG.maxVxOpen, CFG.terminalVy);
@@ -858,6 +862,7 @@ class PlayScene extends Phaser.Scene {
 
   closeChute(ranDry) {
     this.chuteOpen = false;
+    this.rearmUntil = this.time.now + CFG.rearmMs;
     this.dude.setTexture('dude-fall');
     this.poseBody(false);
     this.dude.body.allowGravity = true; // hand vertical control back to gravity
@@ -1035,8 +1040,10 @@ class PlayScene extends Phaser.Scene {
     const low = frac < 0.25;
     let alpha = 1;
     if (this.juice <= 0.01) alpha = 0.45 + 0.55 * Math.sin(this.time.now / 90); // empty: flash
+    const rearming = !this.chuteOpen && this.time.now < this.rearmUntil;
+    if (rearming) alpha *= 0.35 + 0.25 * Math.sin(this.time.now / 60); // dim pulse while the cord re-arms
     if (frac > 0.001) {
-      g.fillStyle(low ? 0xff5a3c : 0xffce54, alpha);
+      g.fillStyle(rearming ? 0xffffff : (low ? 0xff5a3c : 0xffce54), alpha);
       g.fillRoundedRect(bx, by, Math.max(bw * frac, bh), bh, bh / 2);
     }
   }
@@ -1102,7 +1109,9 @@ class PlayScene extends Phaser.Scene {
       const holding = !this.handoff && (this.keys.SPACE.isDown || this.keys.W.isDown
         || this.cursors.up.isDown || this.input.activePointer.isDown);
       if (!holding) this.mustRelease = false; // ran dry: require a fresh press
-      const wantOpen = holding && !this.mustRelease && this.juice > 2;
+      // a pull costs a chunk up front and the cord must have re-armed since the
+      // last release — so mashing the chute to hover no longer works
+      const wantOpen = holding && !this.mustRelease && this.juice >= CFG.pullCost && time >= this.rearmUntil;
       if (wantOpen && !this.chuteOpen) this.deploy();
       else if (!holding && this.chuteOpen) this.closeChute(false);
 
