@@ -1,0 +1,21 @@
+<svg viewBox="0 0 128 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- City zone obstacle: a concrete balcony parapet. Tiles horizontally. Light TL. -->
+  <rect x="0" y="0" width="128" height="40" fill="#b3ada2"/>
+  <rect x="0" y="0" width="128" height="11" fill="#d2ccc0"/>
+  <rect x="0" y="0" width="128" height="3" fill="#e9e4d9"/>
+  <rect x="0" y="11" width="128" height="4" fill="#000" opacity="0.16"/>
+  <rect x="0" y="32" width="128" height="8" fill="#8b857a"/>
+  <rect x="0" y="32" width="128" height="2" fill="#000" opacity="0.14"/>
+  <g fill="#9e988d">
+    <rect x="12" y="18" width="40" height="11" rx="1.5"/>
+    <rect x="76" y="18" width="40" height="11" rx="1.5"/>
+  </g>
+  <g fill="#c4beb2" opacity="0.7">
+    <rect x="12" y="18" width="40" height="2" rx="1"/>
+    <rect x="76" y="18" width="40" height="2" rx="1"/>
+  </g>
+  <rect x="30" y="1" width="9" height="1.4" rx="0.7" fill="#f4f0e8" opacity="0.7"/>
+  <rect x="95" y="34" width="7" height="1.4" rx="0.7" fill="#6f6a60" opacity="0.7"/>
+  <circle cx="64" cy="24" r="1.6" fill="#77716a"/>
+  <rect x="58" y="36" width="12" height="1.6" fill="#5f5a51" opacity="0.6"/>
+</svg>

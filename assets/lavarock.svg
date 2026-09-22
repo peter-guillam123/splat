@@ -1,0 +1,17 @@
+<svg viewBox="0 0 128 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Lava zone obstacle: dark basalt with glowing cracks. Tiles horizontally. -->
+  <rect x="0" y="0" width="128" height="40" fill="#2b2622"/>
+  <path d="M0 0 H128 V8 Q96 11 70 7 Q40 4 0 8 Z" fill="#3a332e"/>
+  <path d="M0 0 H128 V2.5 Q80 4 40 2 Q20 3 0 2.5 Z" fill="#4a423b"/>
+  <path d="M0 40 H128 V32 Q90 30 60 34 Q30 37 0 33 Z" fill="#1a1613"/>
+  <g stroke="#ff6a1a" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.28">
+    <path d="M18 12 L30 22 L26 32"/><path d="M64 10 L72 20 L84 24"/><path d="M104 14 L98 26"/>
+  </g>
+  <g stroke="#ff7a1a" stroke-width="2" fill="none" stroke-linecap="round">
+    <path d="M18 12 L30 22 L26 32"/><path d="M64 10 L72 20 L84 24"/><path d="M104 14 L98 26"/>
+  </g>
+  <g stroke="#ffc14d" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M19 13 L29 21"/><path d="M66 11 L72 19"/>
+  </g>
+  <g fill="#ffc14d"><circle cx="46" cy="17" r="1.1"/><circle cx="92" cy="30" r="0.9"/><circle cx="12" cy="28" r="0.8"/></g>
+</svg>

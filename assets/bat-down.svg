@@ -1,0 +1,13 @@
+<svg viewBox="0 0 80 50" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bat, facing left, wings down. -->
+  <path d="M30 28 Q22 44 4 42 Q12 36 10 28 Q18 30 22 26 Z" fill="#35293d"/>
+  <path d="M50 28 Q58 44 76 42 Q68 36 70 28 Q62 30 58 26 Z" fill="#2c2233"/>
+  <path d="M30 28 Q24 40 8 40" stroke="#4a3a55" stroke-width="1.4" fill="none" opacity="0.8"/>
+  <path d="M50 28 Q56 40 72 40" stroke="#3d3047" stroke-width="1.4" fill="none" opacity="0.8"/>
+  <ellipse cx="40" cy="28" rx="12" ry="9" fill="#2a2230"/>
+  <ellipse cx="36" cy="25" rx="5" ry="4" fill="#3c3144" opacity="0.7"/>
+  <path d="M31 22 L28 13 L35 20 Z" fill="#2a2230"/><path d="M49 22 L52 13 L45 20 Z" fill="#2a2230"/>
+  <circle cx="35" cy="27" r="2" fill="#ffd24d"/><circle cx="43" cy="27" r="2" fill="#ffd24d"/>
+  <circle cx="34.4" cy="26.4" r="0.7" fill="#fff8d6"/><circle cx="42.4" cy="26.4" r="0.7" fill="#fff8d6"/>
+  <path d="M36 32 L38 35 L40 32 L42 35 L44 32" stroke="#ffffff" stroke-width="1.2" fill="none" opacity="0.8"/>
+</svg>

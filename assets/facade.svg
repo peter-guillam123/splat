@@ -1,0 +1,28 @@
+<svg viewBox="0 0 160 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- City zone side wall: a skyscraper facade with a window grid. Tiles vertically (4 floors of 64). -->
+  <rect x="0" y="0" width="160" height="256" fill="#556681"/>
+  <g fill="#4a5a73"><rect x="0" y="52" width="160" height="12"/><rect x="0" y="116" width="160" height="12"/><rect x="0" y="180" width="160" height="12"/><rect x="0" y="244" width="160" height="12"/></g>
+  <g fill="#000" opacity="0.12"><rect x="0" y="64" width="160" height="4"/><rect x="0" y="128" width="160" height="4"/><rect x="0" y="192" width="160" height="4"/><rect x="0" y="0" width="160" height="4"/></g>
+  <g fill="#3f4d64">
+    <rect x="10" y="12" width="26" height="30" rx="2"/><rect x="47" y="12" width="26" height="30" rx="2"/><rect x="84" y="12" width="26" height="30" rx="2"/><rect x="121" y="12" width="26" height="30" rx="2"/>
+    <rect x="10" y="76" width="26" height="30" rx="2"/><rect x="47" y="76" width="26" height="30" rx="2"/><rect x="84" y="76" width="26" height="30" rx="2"/><rect x="121" y="76" width="26" height="30" rx="2"/>
+    <rect x="10" y="140" width="26" height="30" rx="2"/><rect x="47" y="140" width="26" height="30" rx="2"/><rect x="84" y="140" width="26" height="30" rx="2"/><rect x="121" y="140" width="26" height="30" rx="2"/>
+    <rect x="10" y="204" width="26" height="30" rx="2"/><rect x="47" y="204" width="26" height="30" rx="2"/><rect x="84" y="204" width="26" height="30" rx="2"/><rect x="121" y="204" width="26" height="30" rx="2"/>
+  </g>
+  <g fill="#2e3a4e">
+    <rect x="12" y="14" width="22" height="26" rx="1.5"/><rect x="86" y="14" width="22" height="26" rx="1.5"/>
+    <rect x="49" y="78" width="22" height="26" rx="1.5"/><rect x="123" y="78" width="22" height="26" rx="1.5"/>
+    <rect x="12" y="142" width="22" height="26" rx="1.5"/><rect x="123" y="142" width="22" height="26" rx="1.5"/>
+    <rect x="49" y="206" width="22" height="26" rx="1.5"/><rect x="86" y="206" width="22" height="26" rx="1.5"/>
+  </g>
+  <g fill="#ffd98a">
+    <rect x="49" y="14" width="22" height="26" rx="1.5"/><rect x="123" y="14" width="22" height="26" rx="1.5"/>
+    <rect x="12" y="78" width="22" height="26" rx="1.5"/><rect x="86" y="78" width="22" height="26" rx="1.5"/>
+    <rect x="49" y="142" width="22" height="26" rx="1.5"/><rect x="86" y="142" width="22" height="26" rx="1.5"/>
+    <rect x="12" y="206" width="22" height="26" rx="1.5"/><rect x="123" y="206" width="22" height="26" rx="1.5"/>
+  </g>
+  <g fill="#fff3cf" opacity="0.55">
+    <rect x="51" y="16" width="8" height="10" rx="1"/><rect x="14" y="80" width="8" height="10" rx="1"/><rect x="88" y="144" width="8" height="10" rx="1"/><rect x="125" y="208" width="8" height="10" rx="1"/>
+  </g>
+  <g fill="#6a7b96" opacity="0.6"><rect x="10" y="12" width="26" height="2"/><rect x="47" y="76" width="26" height="2"/><rect x="84" y="140" width="26" height="2"/><rect x="121" y="204" width="26" height="2"/></g>
+</svg>

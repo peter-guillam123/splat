@@ -1,0 +1,19 @@
+<svg viewBox="0 0 160 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Lava zone side wall: dark rock veined with glowing magma. Tiles vertically. -->
+  <rect x="0" y="0" width="160" height="256" fill="#241d1a"/>
+  <g fill="#302724">
+    <ellipse cx="34" cy="44" rx="34" ry="22"/><ellipse cx="118" cy="80" rx="40" ry="26"/><ellipse cx="48" cy="140" rx="44" ry="28"/>
+    <ellipse cx="124" cy="176" rx="34" ry="24"/><ellipse cx="44" cy="220" rx="36" ry="20"/>
+  </g>
+  <g fill="#3a2f2b" opacity="0.7"><ellipse cx="26" cy="36" rx="16" ry="9"/><ellipse cx="108" cy="70" rx="18" ry="10"/><ellipse cx="36" cy="130" rx="20" ry="11"/><ellipse cx="114" cy="166" rx="15" ry="9"/></g>
+  <g stroke="#ff6a1a" stroke-width="9" fill="none" stroke-linecap="round" opacity="0.22">
+    <path d="M78 24 Q90 60 74 92 Q66 110 82 126"/><path d="M148 110 Q136 134 150 158"/><path d="M14 168 Q32 190 16 214"/>
+  </g>
+  <g stroke="#ff7a1a" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M78 24 Q90 60 74 92 Q66 110 82 126"/><path d="M148 110 Q136 134 150 158"/><path d="M14 168 Q32 190 16 214"/><path d="M98 200 Q108 216 96 232"/>
+  </g>
+  <g stroke="#ffc14d" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M80 30 Q88 56 78 82"/><path d="M146 116 Q140 132 148 150"/>
+  </g>
+  <g fill="#ffc14d"><circle cx="60" cy="70" r="1.4"/><circle cx="130" cy="140" r="1.2"/><circle cx="40" cy="240" r="1.3"/><circle cx="120" cy="30" r="1"/></g>
+</svg>

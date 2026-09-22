@@ -1,0 +1,25 @@
+<svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+  <!-- City zone: a rooftop sniper. A masked robber kneeling, rifle aimed left. Light TL. -->
+  <!-- rifle -->
+  <path d="M10 44 L62 52" stroke="#2b2b30" stroke-width="7" stroke-linecap="round"/>
+  <path d="M10 44 L62 52" stroke="#4a4a52" stroke-width="3" stroke-linecap="round"/>
+  <rect x="6" y="41" width="9" height="6" rx="2" fill="#1f1f24"/>
+  <path d="M52 56 L60 70" stroke="#3a3238" stroke-width="7" stroke-linecap="round"/>
+  <!-- kneeling body -->
+  <path d="M46 52 Q42 64 50 76 L74 76 Q80 62 70 50 Z" fill="#343a45"/>
+  <path d="M62 50 Q80 62 74 76 L66 76 Q70 62 60 52 Z" fill="#22252c"/>
+  <ellipse cx="64" cy="79" rx="13" ry="6" fill="#1c1f26"/>
+  <ellipse cx="46" cy="80" rx="8" ry="5" fill="#1c1f26"/>
+  <!-- arms on the rifle -->
+  <path d="M56 56 Q44 54 34 47" stroke="#3d434f" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M60 58 Q56 52 50 50" stroke="#343a45" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <circle cx="33" cy="46" r="5.5" fill="#1c1f26"/><circle cx="50" cy="50" r="5" fill="#141519"/>
+  <!-- balaclava head -->
+  <circle cx="64" cy="38" r="15" fill="#26292f"/>
+  <path d="M71 27 A15 15 0 0 1 71 49 Q77 44 77 38 Q77 32 71 27" fill="#181a1f"/>
+  <path d="M52 36 Q64 32 76 35 Q74 41 64 41 Q54 41 52 36 Z" fill="#e8a06c"/>
+  <circle cx="58" cy="37" r="2.2" fill="#20222a"/><circle cx="69" cy="37" r="2.2" fill="#20222a"/>
+  <circle cx="57.4" cy="36.4" r="0.7" fill="#fff" opacity="0.8"/>
+  <path d="M54 34 Q58 33 61 34.5" stroke="#1a1c21" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M66 34.5 Q70 33 74 34" stroke="#1a1c21" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+</svg>

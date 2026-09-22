@@ -1,0 +1,13 @@
+<svg viewBox="0 0 80 50" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hole/lava zone hazard: a bat, facing left, wings up. Flip for rightward. -->
+  <path d="M30 26 Q22 6 4 8 Q12 14 10 22 Q18 20 22 26 Z" fill="#35293d"/>
+  <path d="M50 26 Q58 6 76 8 Q68 14 70 22 Q62 20 58 26 Z" fill="#2c2233"/>
+  <path d="M30 26 Q24 12 8 10" stroke="#4a3a55" stroke-width="1.4" fill="none" opacity="0.8"/>
+  <path d="M50 26 Q56 12 72 10" stroke="#3d3047" stroke-width="1.4" fill="none" opacity="0.8"/>
+  <ellipse cx="40" cy="30" rx="12" ry="9" fill="#2a2230"/>
+  <ellipse cx="36" cy="27" rx="5" ry="4" fill="#3c3144" opacity="0.7"/>
+  <path d="M31 24 L28 15 L35 22 Z" fill="#2a2230"/><path d="M49 24 L52 15 L45 22 Z" fill="#2a2230"/>
+  <circle cx="35" cy="29" r="2" fill="#ffd24d"/><circle cx="43" cy="29" r="2" fill="#ffd24d"/>
+  <circle cx="34.4" cy="28.4" r="0.7" fill="#fff8d6"/><circle cx="42.4" cy="28.4" r="0.7" fill="#fff8d6"/>
+  <path d="M36 34 L38 37 L40 34 L42 37 L44 34" stroke="#ffffff" stroke-width="1.2" fill="none" opacity="0.8"/>
+</svg>

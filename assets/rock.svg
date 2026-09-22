@@ -1,0 +1,17 @@
+<svg viewBox="0 0 128 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hole zone obstacle: a rocky ledge. Tiles horizontally. Light TL. -->
+  <rect x="0" y="0" width="128" height="40" fill="#6b5d4b"/>
+  <path d="M0 0 H128 V9 Q100 12 80 8 Q60 5 40 10 Q20 13 0 9 Z" fill="#8a7a66"/>
+  <path d="M0 0 H128 V3 Q90 5 64 2 Q30 5 0 3 Z" fill="#a3937e"/>
+  <path d="M0 40 H128 V31 Q100 29 76 33 Q50 36 24 32 Q10 30 0 32 Z" fill="#4c4033"/>
+  <g stroke="#3d3229" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.7">
+    <path d="M22 14 L30 22 L26 30"/>
+    <path d="M70 16 L78 21"/>
+    <path d="M100 13 L94 24 L102 31"/>
+    <path d="M48 24 L56 27"/>
+  </g>
+  <g fill="#7c6c58"><circle cx="40" cy="18" r="2.4"/><circle cx="88" cy="27" r="2"/><circle cx="116" cy="19" r="1.8"/></g>
+  <g fill="#9c8b74" opacity="0.8"><circle cx="39" cy="17" r="0.9"/><circle cx="87" cy="26" r="0.8"/></g>
+  <g fill="#5f7a45"><ellipse cx="12" cy="9" rx="6" ry="2.6"/><ellipse cx="58" cy="7" rx="5" ry="2.2"/><ellipse cx="108" cy="8" rx="4" ry="2"/></g>
+  <g fill="#7a9a5a" opacity="0.8"><ellipse cx="10" cy="8" rx="2.4" ry="1"/><ellipse cx="56" cy="6.2" rx="2" ry="0.9"/></g>
+</svg>
