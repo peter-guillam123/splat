@@ -134,6 +134,7 @@ class PlayScene extends Phaser.Scene {
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     this.state = 'ready';
+    this.aboutLink(true);
     this.startY = 300;
     this.chuteOpen = false;
     this.juice = CFG.juiceMax;
@@ -505,6 +506,7 @@ class PlayScene extends Phaser.Scene {
 
   startRun() {
     this.state = 'playing';
+    this.aboutLink(false); // out of the way while you're falling
     this.startY = this.dude.y;
     this.prevGapC = this.dude.x;
     this.dude.body.allowGravity = true; // he drops into the chase
@@ -641,6 +643,12 @@ class PlayScene extends Phaser.Scene {
         this.rows.splice(i, 1);
       }
     }
+  }
+
+  // the page's about link: shown on the title and end screens, hidden mid-run
+  aboutLink(show) {
+    const a = document.getElementById('about-link');
+    if (a) a.classList.toggle('hidden', !show);
   }
 
   // ---------- rooftop snipers ----------
@@ -1317,6 +1325,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   showGameOver(metres, money, isBest) {
+    this.aboutLink(true);
     const cy = H * 0.34;
     const g = this.add.container(0, 0).setScrollFactor(0).setDepth(120).setAlpha(0);
     const panel = this.add.graphics();

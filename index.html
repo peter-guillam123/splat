@@ -45,6 +45,9 @@
       padding: 8px 10px; /* comfortable tap target */
     }
     #about-link:hover, #about-link:focus { color: #fff; }
+    #about-link { transition: opacity 0.35s ease, visibility 0.35s; }
+    #about-link.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    @media (prefers-reduced-motion: reduce) { #about-link { transition: none; } }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
   <script src="audio.js"></script>
