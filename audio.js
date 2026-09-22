@@ -9,6 +9,37 @@
       this.windGain = null;
       this.windFilter = null;
       this.muted = localStorage.getItem('splat.muted') === '1';
+      this.isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      // iOS only unlocks audio inside a real gesture handler, and Phaser's
+      // pointerdown (from touchstart) isn't always enough — so listen for the
+      // gestures Safari trusts directly on the document, and keep resuming
+      // the context if it gets interrupted (a call, the lock screen, a tab
+      // switch) or suspended.
+      const wake = () => this.ensure();
+      ['touchend', 'click', 'keydown', 'pointerup'].forEach((ev) =>
+        document.addEventListener(ev, wake, { passive: true, capture: true }));
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && this.ctx && this.ctx.state !== 'running') this.ctx.resume();
+      });
+    }
+
+    // On an iPhone, WebAudio alone counts as "ambient" sound and is silenced
+    // by the ringer switch. Playing a looping silent <audio> track alongside
+    // it moves the page into media playback, which the switch doesn't mute.
+    // (The unmute.js trick.) Called from ensure() inside the first gesture.
+    _iosPlaybackSession() {
+      if (!this.isIOS || this._silent) return;
+      const a = document.createElement('audio');
+      a.setAttribute('playsinline', '');
+      a.setAttribute('x-webkit-airplay', 'deny');
+      a.preload = 'auto';
+      a.loop = true;
+      a.src = 'data:audio/wav;base64,UklGRgQCAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YeABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIA=';
+      const p = a.play();
+      if (p && p.catch) p.catch(() => {});
+      this._silent = a;
     }
 
     ensure() {
@@ -54,7 +85,8 @@
         rum.connect(throb).connect(this.rumbleGain).connect(this.master);
         rum.start(); lfo.start();
       }
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state !== 'running') this.ctx.resume();
+      this._iosPlaybackSession();
     }
 
     setMuted(m) {
