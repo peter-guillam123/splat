@@ -38,6 +38,21 @@
         this.windGain.gain.value = 0;
         src.connect(this.windFilter).connect(this.windGain).connect(this.master);
         src.start();
+
+        // zone ambience: a low hum (city, hole) and a throbbing rumble (lava),
+        // both silent until updateSky feeds in the zone weights
+        const hum = this.ctx.createBufferSource(); hum.buffer = buf; hum.loop = true;
+        const humF = this.ctx.createBiquadFilter(); humF.type = 'lowpass'; humF.frequency.value = 170;
+        this.humGain = this.ctx.createGain(); this.humGain.gain.value = 0;
+        hum.connect(humF).connect(this.humGain).connect(this.master); hum.start();
+        const rum = this.ctx.createOscillator(); rum.type = 'sine'; rum.frequency.value = 46;
+        const throb = this.ctx.createGain(); throb.gain.value = 0.7;
+        const lfo = this.ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.4;
+        const lfoG = this.ctx.createGain(); lfoG.gain.value = 0.3;
+        lfo.connect(lfoG).connect(throb.gain);
+        this.rumbleGain = this.ctx.createGain(); this.rumbleGain.gain.value = 0;
+        rum.connect(throb).connect(this.rumbleGain).connect(this.master);
+        rum.start(); lfo.start();
       }
       if (this.ctx.state === 'suspended') this.ctx.resume();
     }
@@ -54,6 +69,20 @@
       const t = this.ctx.currentTime;
       this.windGain.gain.setTargetAtTime(speed01 * 0.14, t, 0.12);
       this.windFilter.frequency.setTargetAtTime(250 + speed01 * 750, t, 0.12);
+    }
+
+    // w = { city, hole, lava } zone weights, 0-1
+    ambience(w) {
+      if (!this.ctx || !this.humGain) return;
+      const t = this.ctx.currentTime;
+      this.humGain.gain.setTargetAtTime(Math.max(w.city * 0.06, w.hole * 0.04), t, 0.7);
+      this.rumbleGain.gain.setTargetAtTime(w.lava * 0.18, t, 0.9);
+    }
+
+    drip() { // a cave drip: a short high ping that falls away
+      if (!this.ctx) return;
+      const f = 1600 + Math.random() * 1100;
+      this._tone('sine', f, f * 0.5, 0.24, 0.045);
     }
 
     _noiseBurst(dur, gainV, filterType, freq) {

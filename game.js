@@ -1073,6 +1073,12 @@ class PlayScene extends Phaser.Scene {
     for (const row of this.rows) { row.l.setTint(dim); row.r.setTint(dim); }
     for (const c of this.clouds) c.setTint(dim);
     for (const b of this.birdsGroup.getChildren()) b.setTint(b.zoneTint ? this.mulTint(dim, b.zoneTint) : dim);
+
+    // zone ambience and the lava embers, driven by the same weights
+    const wz = {}; wz[zi.key] = (wz[zi.key] || 0) + wI; wz[zj.key] = (wz[zj.key] || 0) + wJ;
+    SFX.ambience({ city: wz.city || 0, hole: wz.hole || 0, lava: wz.lava || 0 });
+    if ((wz.hole || 0) > 0.5 && t > (this.nextDrip || 0)) { SFX.drip(); this.nextDrip = t + Phaser.Math.Between(900, 2800); }
+    this.embers.emitting = (wz.lava || 0) > 0.3;
   }
 
   // ---------- zone set-pieces ----------
@@ -1125,7 +1131,6 @@ class PlayScene extends Phaser.Scene {
       if (!this.reducedMotion) this.cameras.main.shake(380, 0.012);
       const bloom = this.add.rectangle(W / 2, H / 2, W, H, 0xff6a1a, 0.5).setScrollFactor(0).setDepth(115);
       this.tweens.add({ targets: bloom, alpha: 0, duration: 900, onComplete: () => bloom.destroy() });
-      this.embers.start();
     }
   }
 
