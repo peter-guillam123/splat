@@ -22,6 +22,8 @@ const CFG = {
   juiceRefill: 10,       // per second while closed
   pullCost: 22,          // spent up front on every ripcord pull: mashing empties it
   rearmMs: 620,          // after you let go, the cord needs this long to re-arm
+  dragSteerPx: 24,       // a press that moves this far sideways (game px) is a steer, not a pull
+  holdGraceMs: 90,       // a press that stays still this long is a pull
   juiceNearMiss: 20,
   nearMissDist: 46,      // px from girder edge that counts as a graze
   rowGapStart: 270,      // gap width, shrinks with depth
@@ -145,6 +147,7 @@ class PlayScene extends Phaser.Scene {
     this.cash = 0;         // headline score, in dollars
     this.chaseLevel = 0;   // rises each catch; the robber gets faster
     this.streak = 0;       // catches this run; each one multiplies the next payday
+    this.pressMode = 'idle'; // touch press: idle | pending | hold (chute) | steer (freefall)
     this.nextCashAt = 0;
 
     this.cameras.main.setBounds(0, -2000, W, 4e9);
@@ -1416,8 +1419,18 @@ class PlayScene extends Phaser.Scene {
       if (this.dude.x > W - 40) { this.dude.x = W - 40; if (body.velocity.x > 0) body.setVelocityX(0); }
 
       // --- chute (locked out during the handoff, so he freefalls into frame) ---
+      // Touch (and mouse): a still press pulls the cord; a press that starts
+      // moving sideways steers in freefall without spending a pull. Decided
+      // once per press, so a hold that later drifts keeps its chute.
+      const p = this.input.activePointer;
+      if (!p.isDown) this.pressMode = 'idle';
+      else if (this.pressMode === 'idle') { this.pressMode = 'pending'; this.pressAt = time; }
+      if (this.pressMode === 'pending') {
+        if (Math.abs(p.x - p.downX) > CFG.dragSteerPx) this.pressMode = 'steer';
+        else if (time - this.pressAt > CFG.holdGraceMs) this.pressMode = 'hold';
+      }
       const holding = !this.handoff && (this.keys.SPACE.isDown || this.keys.W.isDown
-        || this.cursors.up.isDown || this.input.activePointer.isDown);
+        || this.cursors.up.isDown || this.pressMode === 'hold');
       if (!holding) this.mustRelease = false; // ran dry: require a fresh press
       // a pull costs a chunk up front and the cord must have re-armed since the
       // last release — so mashing the chute to hover no longer works
