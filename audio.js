@@ -176,6 +176,12 @@
       this._tone('sine', 60, 38, 1.4, 0.3);
     }
 
+    shot() { // a sniper's rifle crack
+      if (!this.ctx) return;
+      this._noiseBurst(0.09, 0.3, 'highpass', 2400);
+      this._tone('square', 230, 80, 0.09, 0.1);
+    }
+
     boom() { // grenade blast: a low thump + a burst of noise
       if (!this.ctx) return;
       this._noiseBurst(0.4, 0.34, 'lowpass', 900);

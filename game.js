@@ -62,6 +62,11 @@ const CFG = {
   grenadeFuseMs: [2200, 3300], // fuse before it blows on its own
   grenadeFall: 55,       // gentle drift down as it sits on the trail
   blastRadius: 155,      // how near the blast has to be to tumble you
+  // --- rooftop snipers (city) ---
+  sniperChance: 0.42,    // chance a static city ledge gets a sniper
+  sniperFireMs: [1500, 2500], // between shots
+  sniperRange: 1300,     // how far above him you have to be to draw fire
+  bulletSpeed: 540,
 };
 
 // Sky bands the fall cycles through: day → sunset → night → dawn → day…
@@ -178,6 +183,10 @@ class PlayScene extends Phaser.Scene {
 
     this.buildRobber();
 
+    // rooftop snipers' bullets: a hit knocks you into a tumble
+    this.bullets = this.physics.add.group({ allowGravity: false });
+    this.physics.add.overlap(this.dude, this.bullets, (dude, b) => this.hitBullet(b));
+
     for (let i = 0; i < 5; i++) this.spawnCloud(true);
 
     // The camera is driven by hand (no springy follow): the title holds the
@@ -264,6 +273,13 @@ class PlayScene extends Phaser.Scene {
       g.fillStyle(0x000000, 0.12); g.fillEllipse(9, 11, 13, 3); // soft underside
       g.fillStyle(0xffffff, 1); g.fillRect(8.2, 3, 1.6, 12);    // quill
       g.generateTexture('feather', 18, 18);
+      g.destroy();
+    }
+    if (!this.textures.exists('bullet')) {
+      const g = this.make.graphics({ add: false });
+      g.fillStyle(0xffb03c, 1); g.fillRoundedRect(0, 1, 16, 5, 2.5);
+      g.fillStyle(0xfff1c0, 1); g.fillRoundedRect(2, 2, 9, 3, 1.5);
+      g.generateTexture('bullet', 16, 7);
       g.destroy();
     }
     if (!this.textures.exists('streak')) {
@@ -569,7 +585,18 @@ class PlayScene extends Phaser.Scene {
     }
     if (speed) { l.body.setVelocityX(speed); r.body.setVelocityX(speed); }
 
-    this.rows.push({ l, r, y, gapW, type, speed, boundL, boundR, passed: false });
+    const row = { l, r, y, gapW, type, speed, boundL, boundR, passed: false, sniper: null };
+    this.rows.push(row);
+
+    // in the city, some still ledges have a rooftop sniper covering the gap
+    const zone = this.zoneAt(depth);
+    if (zone.key === 'city' && depth > ZONES[1].start + 1500 && type === 'static'
+        && Math.random() < CFG.sniperChance) {
+      row.sniperLeft = Math.random() < 0.5;
+      row.sniper = this.add.image(0, 0, 'sniper').setScale(0.5).setDepth(5.5).setFlipX(row.sniperLeft);
+      row.nextShot = this.time.now + Phaser.Math.Between(900, 1600);
+      this.placeSniper(row);
+    }
   }
 
   updateRows(dt) {
@@ -593,6 +620,8 @@ class PlayScene extends Phaser.Scene {
         }
       }
 
+      if (row.sniper) this.updateSniper(row);
+
       // near-miss check once the dude is fully past the row
       if (!row.passed && this.state === 'playing' && this.dude.body.top > row.y + 24) {
         row.passed = true;
@@ -605,9 +634,66 @@ class PlayScene extends Phaser.Scene {
 
       if (row.y < cam.scrollY - 120) {
         row.l.destroy(); row.r.destroy();
+        if (row.sniper) row.sniper.destroy();
         this.rows.splice(i, 1);
       }
     }
+  }
+
+  // ---------- rooftop snipers ----------
+
+  placeSniper(row) {
+    // perched on the bar end nearest the gap, feet on the ledge, facing the gap
+    const x = row.sniperLeft ? row.l.x + W - 46 : row.r.x + 46;
+    row.sniper.setPosition(x, row.y - 62);
+  }
+
+  updateSniper(row) {
+    const now = this.time.now;
+    const sp = row.sniper;
+    const above = row.y - this.dude.y;
+    const inRange = this.state === 'playing' && !this.handoff && above > 80 && above < CFG.sniperRange;
+    if (!inRange) { if (row.aiming) { row.aiming = false; sp.clearTint(); } return; }
+    // telegraph: he goes hot for a beat before the shot
+    if (!row.aiming && now > row.nextShot - 280) { row.aiming = true; sp.setTint(0xff8a5a); }
+    if (now >= row.nextShot) {
+      row.aiming = false; sp.clearTint();
+      this.fireBullet(row);
+      row.nextShot = now + Phaser.Math.Between(CFG.sniperFireMs[0], CFG.sniperFireMs[1]);
+    }
+  }
+
+  fireBullet(row) {
+    const sp = row.sniper;
+    const mx = sp.x + (row.sniperLeft ? 34 : -34), my = sp.y - 6;
+    // lead the shot a little so it's threatening, not a gift
+    const tx = this.dude.x + this.dude.body.velocity.x * 0.25;
+    const ty = this.dude.y + this.dude.body.velocity.y * 0.25;
+    const ang = Math.atan2(ty - my, tx - mx);
+    const b = this.bullets.create(mx, my, 'bullet').setDepth(7).setRotation(ang);
+    b.body.allowGravity = false;
+    b.body.setVelocity(Math.cos(ang) * CFG.bulletSpeed, Math.sin(ang) * CFG.bulletSpeed);
+    b.born = this.time.now;
+    SFX.shot();
+    // muzzle flash
+    const fl = this.add.image(mx, my, 'flash').setScale(0.45).setDepth(7.5).setAlpha(0.95);
+    this.tweens.add({ targets: fl, alpha: 0, scale: 0.15, duration: 120, onComplete: () => fl.destroy() });
+  }
+
+  updateBullets(time) {
+    const cam = this.cameras.main;
+    this.bullets.getChildren().slice().forEach((b) => {
+      if (time - b.born > 2600 || b.x < -60 || b.x > W + 60 || b.y < cam.scrollY - 200 || b.y > cam.scrollY + H + 200) {
+        this.bullets.remove(b, true, true);
+      }
+    });
+  }
+
+  hitBullet(b) {
+    if (this.state !== 'playing') return;
+    this.bullets.remove(b, true, true);
+    this.puffs.explode(10, this.dude.x, this.dude.y);
+    this.startTumble();
   }
 
   nearMiss() {
@@ -1356,6 +1442,7 @@ class PlayScene extends Phaser.Scene {
       this.updateRobber(time, dt);
       this.updateCash(time);
       this.updateGrenades(time);
+      this.updateBullets(time);
       // crossing into a new zone fires its set-piece, once
       const depthP = this.dude.y - this.startY;
       for (let k = 1; k < ZONES.length; k++) {
