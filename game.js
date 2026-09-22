@@ -818,7 +818,8 @@ class PlayScene extends Phaser.Scene {
   }
 
   grabCash(c) {
-    if (this.state !== 'playing' || c.grabbed) return;
+    // cash still counts while you're tumbling: a dying man can grab a bag
+    if ((this.state !== 'playing' && this.state !== 'tumbling') || c.grabbed) return;
     c.grabbed = true;
     this.cash += c.value;
     SFX.chaching(c.value >= CFG.cashBag);
@@ -1248,7 +1249,8 @@ class PlayScene extends Phaser.Scene {
     if (this.state !== 'playing') return;
     this.state = 'tumbling';
     this.canRestart = false;
-    this.lockScore();
+    // the score locks when the tumble ends, not here: cash grabbed on the way
+    // down still counts (see grabCash, splatDeath and the safety timer)
     SFX.wind(0);
     SFX.screech();
     SFX.crash();
@@ -1259,7 +1261,7 @@ class PlayScene extends Phaser.Scene {
     if (!this.reducedMotion) this.cameras.main.shake(160, 0.007);
     this.puffs.explode(12, this.dude.x, this.dude.y);
     this.time.delayedCall(3400, () => {
-      if (this.state === 'tumbling') { this.state = 'dead'; this.gameOverSoon(0); }
+      if (this.state === 'tumbling') { this.state = 'dead'; this.lockScore(); this.gameOverSoon(0); }
     });
   }
 
@@ -1270,7 +1272,7 @@ class PlayScene extends Phaser.Scene {
     const wasPlaying = this.state === 'playing';
     this.state = 'dead';
     this.canRestart = false;
-    if (wasPlaying) this.lockScore(); // a tumble already locked it
+    this.lockScore();
 
     SFX.wind(0);
     if (wasPlaying) SFX.screech();
@@ -1475,8 +1477,6 @@ class PlayScene extends Phaser.Scene {
       for (let k = 1; k < ZONES.length; k++) {
         if (!this.crossed[k] && depthP >= ZONES[k].start) { this.crossed[k] = true; this.enterZone(k); }
       }
-      // money is earned, never given: only cash pickups and catching him pay
-      this.cashText.setText('$' + Math.floor(this.cash).toLocaleString('en-US'));
       SFX.wind(this.chuteOpen ? speed01 * 0.4 : speed01);
     }
 
@@ -1484,6 +1484,9 @@ class PlayScene extends Phaser.Scene {
     // he tumbles so we see him land
     if ((this.state === 'playing' || this.state === 'tumbling') && !this.handoff) {
       this.cameras.main.scrollY = this.dude.y - H * CFG.holdFrac;
+      // money is earned, never given: only cash pickups and catching him pay
+      // (and a tumbling man can still grab a bag on the way down)
+      this.cashText.setText('$' + Math.floor(this.cash).toLocaleString('en-US'));
     }
 
     // speed lines only when really moving, and never during the intro handoff
